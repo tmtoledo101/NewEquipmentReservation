@@ -1,12 +1,11 @@
-export interface IViewNewEquipmentRequestState {
-    items: any;
-    menuTabs: any;
-    tabValue: Number;
-    referenceNumberList: any;
-    pastRequestList: any;
-    releaseRequestList: any;
-    returnRequestList: any;
-    department:any;
+import { IEquipmentRequest } from "./interfaces/IEquipmentRequest";
 
-  }
-  
+export interface IViewNewEquipmentRequestState {
+  tabValue: number;
+  menuTabs: string[];
+  referenceNumberList: IEquipmentRequest[];
+  pastRequestList: IEquipmentRequest[];
+  releaseRequestList: IEquipmentRequest[];
+  returnRequestList: IEquipmentRequest[];
+  department: string[];
+}
