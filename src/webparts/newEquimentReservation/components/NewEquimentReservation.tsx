@@ -81,6 +81,7 @@ export default class NewEquimentReservation extends React.Component<INewEquiment
   }
 
   private getEquipments = async () => {
+    console.log(`start getEquipments`);
     const {
       buildingList,
       buildBorrowedMap,
@@ -91,8 +92,11 @@ export default class NewEquimentReservation extends React.Component<INewEquiment
     this.buildBorrowedMap = buildBorrowedMap;
     this.buildEquipmentMap = buildEquipmentMap;
     this.originalEquipmentList = originalEquipmentList;
-    console.log(`buildingList`, buildingList);
     this.setState({ buildingList });
+    console.log(`buildingList`, buildingList);
+    console.log(`buildBorrowMap`, buildBorrowedMap);
+    console.log(`buildEquipmentMap`, buildEquipmentMap);
+    console.log(`originalEquipmentList`, originalEquipmentList);
   }
 
   private getTime = async () => {

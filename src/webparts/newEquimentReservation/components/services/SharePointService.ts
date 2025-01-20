@@ -63,7 +63,6 @@ export class SharePointService {
       )
       .expand("BorrowedFrom/FieldValuesAsText")
       .get();
-
     const buildObj = {};
     const buildBorrowedMap = {};
     const buildEquipmentMap = {};
