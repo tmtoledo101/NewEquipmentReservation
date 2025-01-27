@@ -61,7 +61,9 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
     
     if (department.length === 0) {
       const currentUser = await SharePointService.getCurrentUser();
-      department = await SharePointService.getDepartments(currentUser.Email);
+      //department = await SharePointService.getDepartments(currentUser.Email);
+      console.log(`CurrentUser:`,currentUser.Title);
+       department = await SharePointService.getDepartments(currentUser.Title);
     }
 
     const requests = await SharePointService.getEquipmentRequests(from, to, department, column);

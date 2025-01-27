@@ -2,6 +2,7 @@ import { sp } from "@pnp/sp";
 import "@pnp/sp/webs";
 import "@pnp/sp/lists";
 import "@pnp/sp/items";
+import * as moment from "moment";
 import { IEquipmentRequest } from "../interfaces/IEquipmentRequest";
 import { dateConverter } from "../utils/helpers";
 
@@ -55,9 +56,31 @@ export class SharePointService {
   }
 
   public static async getEquipmentRequests(from: Date, to: Date, departments: string[], filterColumn: string = 'Department'): Promise<IEquipmentRequest[]> {
-    const dateRange = `FromDate ge datetime'${dateConverter(from, 1)}' and ToDate le datetime'${dateConverter(to, 2)}'`;
-    let query = departments.map(dept => `${filterColumn} eq '${dept}'`).join(' or ');
-    const filterQuery = `${dateRange} and (${query})`;
+    // Format dates properly for SharePoint
+    //const fromDateStr = moment(from).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+    //const toDateStr = moment(to).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
+    
+   // const fromDateStr = moment(from).format("YYYY-MM-DD");
+    //const toDateStr = moment(to).format("YYYY-MM-DD");
+    
+    // Build date range filter
+    //const dateRange = `FromDate ge datetime'${fromDateStr}' and ToDate le datetime'${toDateStr}'`;
+    //const dateRange = `FromDate ge date'${fromDateStr}' and ToDate le date'${toDateStr}'`;
+    /*
+    const dateRange = `(FromDate le datetime'${to.toISOString()}' and ToDate ge datetime'${from.toISOString()}') or
+          (FromDate ge datetime'${from.toISOString()}' and FromDate le datetime'${to.toISOString()}')`;
+    */
+    const dateRange = `(FromDate ge datetime'${from.toISOString()}' and ToDate le datetime'${to.toISOString()}')`;
+    
+    // Build department filter only if departments array is not empty
+    let filterQuery = dateRange;
+    if (departments && departments.length > 0) {
+      // Escape any single quotes in department names and build OR conditions
+      const deptQuery = departments
+        .map(dept => `${filterColumn} eq '${dept.replace(/'/g, "''")}'`)
+        .join(' or ');
+      filterQuery += ` and (${deptQuery})`;
+    }
 
     const requestItems = await sp.web.lists
       .getByTitle("NewEquipmentRequestList")

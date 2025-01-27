@@ -1,0 +1,94 @@
+@import '~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss';
+
+.resDisplay {
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: $ms-color-white;
+  }
+
+  .label {
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .width {
+    width: 100%;
+  }
+
+  .imageData {
+    width: 100%;
+    height: 300px;
+    overflow: hidden;
+    margin-bottom: 20px;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .facilityDetails {
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 20px;
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+
+      th {
+        background-color: $ms-color-themePrimary;
+        color: $ms-color-white;
+      }
+
+      tr:nth-child(even) {
+        background-color: $ms-color-neutralLighter;
+      }
+    }
+  }
+
+  .closeBtn {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+
+  .dropZone {
+    min-height: 100px;
+    border: 2px dashed $ms-color-themePrimary;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .error {
+    color: $ms-color-error;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  .formHandle {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .previewChip {
+    margin: 3px;
+    height: 20px;
+  }
+
+  .button {
+    margin-left: 10px;
+  }
+}
