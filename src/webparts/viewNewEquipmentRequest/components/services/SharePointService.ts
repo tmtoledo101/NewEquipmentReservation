@@ -70,7 +70,11 @@ export class SharePointService {
     const dateRange = `(FromDate le datetime'${to.toISOString()}' and ToDate ge datetime'${from.toISOString()}') or
           (FromDate ge datetime'${from.toISOString()}' and FromDate le datetime'${to.toISOString()}')`;
     */
-    const dateRange = `(FromDate ge datetime'${from.toISOString()}' and ToDate le datetime'${to.toISOString()}')`;
+    // Format dates as UTC midnight to ensure consistent date comparison
+    const fromDateStr = moment(from).startOf('day').utc().format("YYYY-MM-DD[T]00:00:00[Z]");
+    const toDateStr = moment(to).endOf('day').utc().format("YYYY-MM-DD[T]23:59:59[Z]");
+    
+    const dateRange = `(FromDate le datetime'${toDateStr}' and ToDate ge datetime'${fromDateStr}')`;
     
     // Build department filter only if departments array is not empty
     let filterQuery = dateRange;
