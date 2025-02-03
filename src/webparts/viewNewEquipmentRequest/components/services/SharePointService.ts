@@ -27,26 +27,30 @@ export class SharePointService {
     return deparmentData.map(item => item.Department.Department);
   }
 
+  //TERENCE change this to Title property to Email !!!! 
+// "EquipmentOwner/Title" to  "EquipmentOwner/EMail"
   public static async getEquipmentOwners(): Promise<{ownerEmails: string[], departmentsByOwner: {[key: string]: string[]}}> {
     const equipmentList: any[] = await sp.web.lists
       .getByTitle("EquipmentOwner")
       .items.select(
         "Department/Department",
-        "EquipmentOwner/EMail"
+        "EquipmentOwner/Title",
       ).expand(
-        "EquipmentOwner/EMail",
+        "EquipmentOwner/Title",
         "Department/FieldValuesAsText"
       )
       .get();
-
-    const ownerEmails = equipmentList.map(item => item.EquipmentOwner.EMail);
+//TERENCE change this to Title property to Email !!!! 
+    console.log(`equipmentList:`,equipmentList);
+    const ownerEmails = equipmentList.map(item => item.EquipmentOwner.Title);
     const departmentsByOwner = {};
     
     equipmentList.forEach(item => {
-      if (!departmentsByOwner[item.EquipmentOwner.EMail]) {
-        departmentsByOwner[item.EquipmentOwner.EMail] = [];
+      console.log(`EquipmentOwnerTitle:`,item.EquipmentOwner.Title);
+      if (!departmentsByOwner[item.EquipmentOwner.Title]) {
+        departmentsByOwner[item.EquipmentOwner.Title] = [];
       }
-      departmentsByOwner[item.EquipmentOwner.EMail].push(item.Department.Department);
+      departmentsByOwner[item.EquipmentOwner.Title].push(item.Department.Department);
     });
 
     return {
@@ -56,20 +60,7 @@ export class SharePointService {
   }
 
   public static async getEquipmentRequests(from: Date, to: Date, departments: string[], filterColumn: string = 'Department'): Promise<IEquipmentRequest[]> {
-    // Format dates properly for SharePoint
-    //const fromDateStr = moment(from).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
-    //const toDateStr = moment(to).format("YYYY-MM-DD[T]HH:mm:ss[Z]");
-    
-   // const fromDateStr = moment(from).format("YYYY-MM-DD");
-    //const toDateStr = moment(to).format("YYYY-MM-DD");
-    
-    // Build date range filter
-    //const dateRange = `FromDate ge datetime'${fromDateStr}' and ToDate le datetime'${toDateStr}'`;
-    //const dateRange = `FromDate ge date'${fromDateStr}' and ToDate le date'${toDateStr}'`;
-    /*
-    const dateRange = `(FromDate le datetime'${to.toISOString()}' and ToDate ge datetime'${from.toISOString()}') or
-          (FromDate ge datetime'${from.toISOString()}' and FromDate le datetime'${to.toISOString()}')`;
-    */
+   
     // Format dates as UTC midnight to ensure consistent date comparison
     const fromDateStr = moment(from).startOf('day').utc().format("YYYY-MM-DD[T]00:00:00[Z]");
     const toDateStr = moment(to).endOf('day').utc().format("YYYY-MM-DD[T]23:59:59[Z]");

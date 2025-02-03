@@ -95,18 +95,22 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
     });
   }
 
-  public async componentDidMount(): Promise<void> {
-    const currentUser = await SharePointService.getCurrentUser();
-    const { ownerEmails, departmentsByOwner } = await SharePointService.getEquipmentOwners();
-    
-    if (ownerEmails.includes(currentUser.Email)) {
-      const departments = departmentsByOwner[currentUser.Email];
-      this.setState({
-        menuTabs: ["By Reference No", "Past Request", "For Release", "For Return"],
-        department: departments,
-      });
-    }
+
+
+//TERENCE change this to Title property to Email !!!!
+public async componentDidMount(): Promise<void> {
+  const currentUser = await SharePointService.getCurrentUser();
+  const { ownerEmails, departmentsByOwner } = await SharePointService.getEquipmentOwners();
+  console.log(`OwnerEmails:`,ownerEmails);
+  console.log(`currentUserEmail:`,currentUser.Title);
+  if (ownerEmails.includes(currentUser.Title)) {
+    const departments = departmentsByOwner[currentUser.Title];
+    this.setState({
+      menuTabs: ["By Reference No", "Past Request", "For Release", "For Return"],
+      department: departments,
+    });
   }
+}
 
   public render(): React.ReactElement<IViewNewEquipmentRequestProps> {
     const { tabValue, menuTabs } = this.state;
