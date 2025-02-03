@@ -206,7 +206,7 @@ export default class DisplayNewEquipmentRequest extends React.Component<
     const { value } = e.target;
     const buildingValue = formik.values && formik.values["building"];
     const key = buildingValue ? `${buildingValue}-${value}` : value;
-    this.equipmentListMap = this.buildEquipmentMap[key];
+    this.equipmentListMap = this.buildEquipmentMap[key] || {};
     this.setState({
       equipmentList: Object.keys(this.equipmentListMap).map((item, index) => ({
         id: index,
@@ -356,7 +356,7 @@ export default class DisplayNewEquipmentRequest extends React.Component<
       this.formikRef.current.setFieldValue("assetNumber", []);
     }
 
-    let equipmentList = Object.keys(this.equipmentListMap).map((item) => ({
+    let equipmentList = Object.keys(this.equipmentListMap || {}).map((item) => ({
       id: item,
       value: item,
     }));

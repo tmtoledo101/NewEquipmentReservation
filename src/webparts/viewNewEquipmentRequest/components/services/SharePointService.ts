@@ -106,4 +106,29 @@ export class SharePointService {
       borrowedFrom: item.BorrowedFrom
     }));
   }
+
+  public static async updateEquipmentRequest(request: IEquipmentRequest): Promise<void> {
+    const updateData = {
+      Building: request.building,
+      FromDate: request.fromDate,
+      ToDate: request.toDate,
+      ContactNumber: request.contactNumber,
+      Status: request.status,
+      Time: request.time,
+      BorrowedFrom: request.borrowedFrom,
+      EquipmentData: request.equipmentData ? JSON.stringify(request.equipmentData) : null,
+      Remarks: request.remarks,
+      "Released To": request.releasedTo,
+      "Released By": request.releasedBy,
+      "Released Date": request.releasedDate,
+      "Returned To": request.returnedTo,
+      "Returned By": request.returnedBy,
+      "Returned Date": request.returnedDate
+    };
+
+    await sp.web.lists
+      .getByTitle("NewEquipmentRequestList")
+      .items.getById(request.ID)
+      .update(updateData);
+  }
 }

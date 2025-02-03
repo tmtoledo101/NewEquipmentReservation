@@ -17,4 +17,10 @@ export interface IEquipmentRequest {
   releasedBy?: string;
   releasedDate?: string;
   borrowedFrom?: string;
+  remarks?: string;
+  equipmentData?: Array<{
+    equipment: string;
+    quantity: string;
+    assetNumber: string[];
+  }>;
 }
