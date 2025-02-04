@@ -107,6 +107,42 @@ export class SharePointService {
     }));
   }
 
+  public static async getEquipmentRequestById(id: number): Promise<IEquipmentRequest> {
+    try {
+      const item = await sp.web.lists
+        .getByTitle("NewEquipmentRequestList")
+        .items.getById(id)
+        .select("*")
+        .get();
+
+      return {
+        building: item.Building,
+        fromDate: item.FromDate,
+        toDate: item.ToDate,
+        referenceNumber: item.ReferenceNumber,
+        requestedBy: item.RequestedBy,
+        department: item.Department,
+        contactNumber: item.ContactNumber,
+        status: item.Status,
+        time: item.Time,
+        equipment: item.EquipmentData,
+        equipmentData: item.EquipmentData ? JSON.parse(item.EquipmentData) : [],
+        ID: item.Id,
+        returnedBy: item["Returned By"],
+        returnedTo: item["Returned To"],
+        returnedDate: item["Returned Date"],
+        releasedTo: item["Released To"],
+        releasedBy: item["Released By"],
+        releasedDate: item["Released Date"],
+        borrowedFrom: item.BorrowedFrom,
+        remarks: item.Remarks
+      };
+    } catch (error) {
+      console.error('Error fetching equipment request:', error);
+      throw error;
+    }
+  }
+
   public static async updateEquipmentRequest(request: IEquipmentRequest): Promise<void> {
     const updateData = {
       Building: request.building,
