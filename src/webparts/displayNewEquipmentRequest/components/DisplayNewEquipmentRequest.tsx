@@ -351,9 +351,11 @@ export default class DisplayNewEquipmentRequest extends React.Component<
     }
 
     if (this.formikRef.current) {
+      // Ensure assetNumber is always an array
+      const emptyAssetNumbers: string[] = [];
       this.formikRef.current.setFieldValue("equipment", "");
       this.formikRef.current.setFieldValue("quantity", "");
-      this.formikRef.current.setFieldValue("assetNumber", []);
+      this.formikRef.current.setFieldValue("assetNumber", emptyAssetNumbers);
     }
 
     let equipmentList = Object.keys(this.equipmentListMap || {}).map((item) => ({
@@ -398,9 +400,11 @@ export default class DisplayNewEquipmentRequest extends React.Component<
         equipmentList,
       });
       if (this.formikRef.current) {
+        // Ensure assetNumber is always an array
+        const emptyAssetNumbers: string[] = [];
         this.formikRef.current.setFieldValue("equipment", "");
         this.formikRef.current.setFieldValue("quantity", "");
-        this.formikRef.current.setFieldValue("assetNumber", []);
+        this.formikRef.current.setFieldValue("assetNumber", emptyAssetNumbers);
         this.formikRef.current.setFieldValue("currentRecord", -1);
       }
     }
@@ -438,9 +442,11 @@ export default class DisplayNewEquipmentRequest extends React.Component<
       equipmentList: [],
     });
     if (this.formikRef.current) {
+      // Ensure assetNumber is always an array
+      const emptyAssetNumbers: string[] = [];
       this.formikRef.current.setFieldValue("equipment", "");
       this.formikRef.current.setFieldValue("quantity", "");
-      this.formikRef.current.setFieldValue("assetNumber", []);
+      this.formikRef.current.setFieldValue("assetNumber", emptyAssetNumbers);
     }
   }
 
