@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { Formik } from "formik";
+import { MuiPickersUtilsProvider } from '@material-ui/pickers';
+import DateFnsUtils from '@date-io/date-fns';
 import { 
   DialogContent, 
   DialogActions,
@@ -150,8 +152,8 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
             formik.setFieldValue("building", selectedRequest.building || "");
             formik.setFieldValue("borrowedFrom", selectedRequest.borrowedFrom || "");
             formik.setFieldValue("time", selectedRequest.time || "");
-            formik.setFieldValue("fromDate", selectedRequest.fromDate || null);
-            formik.setFieldValue("toDate", selectedRequest.toDate || null);
+            formik.setFieldValue("fromDate", selectedRequest.fromDate ? new Date(selectedRequest.fromDate) : null);
+            formik.setFieldValue("toDate", selectedRequest.toDate ? new Date(selectedRequest.toDate) : null);
             formik.setFieldValue("remarks", selectedRequest.remarks || "");
           }
 
@@ -210,7 +212,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
   if (!selectedRequest) return null;
 
   return (
-    <>
+    <MuiPickersUtilsProvider utils={DateFnsUtils}>
       <ModalPopup 
         open={isOpen} 
         title={`Equipment Reservation - ${selectedRequest.referenceNumber}`}
@@ -409,6 +411,6 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
           {notification.message}
         </Alert>
       </Snackbar>
-    </>
+    </MuiPickersUtilsProvider>
   );
 };
