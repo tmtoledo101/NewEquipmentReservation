@@ -1,157 +1,121 @@
 import * as React from 'react';
-import { Field } from "formik";
-import { FormControl, TextField, Select, MenuItem, Chip, Box, Checkbox } from "@material-ui/core";
-import { DatePicker, MuiPickersUtilsProvider } from "@material-ui/pickers";
-import DateFnsUtils from "@date-io/date-fns";
-import styles from '../ViewNewEquipmentRequest.module.scss';
-import { IDropdownItem } from '../interfaces/IDropdownItem';
-
-interface IDropdownProps {
-  items: IDropdownItem[];
-  name: string;
-  handleChange?: (e: any) => void;
-  multiple?: boolean;
-  disabled?: boolean;
-}
-
-export const Dropdown: React.FC<IDropdownProps> = (props) => {
-  const { items, handleChange, name, multiple, disabled } = props;
-  return (
-    <Field name={name}>
-      {({ field, meta, form }) => {
-        const { error, touched } = meta;
-        return (
-          <FormControl fullWidth>
-            <Select
-              multiple={multiple}
-              onChange={(e) => {
-                field.onChange(e);
-                if (handleChange) {
-                  handleChange(e);
-                }
-              }}
-              onBlur={(e) => {
-                form.setFieldTouched(name, true, false);
-                field.onBlur(e);
-              }}
-              value={field.value}
-              className={styles.width}
-              variant="standard"
-              disabled={disabled}
-              renderValue={(selected: any) => {
-                if (multiple) {
-                  return (
-                    <Box sx={{ display: "flex", flexWrap: "wrap" }}>
-                      {selected && selected.map((value) => (
-                        <Chip
-                          key={value}
-                          label={value}
-                          style={{ margin: "3px", height: "20px" }}
-                        />
-                      ))}
-                    </Box>
-                  );
-                } else {
-                  return selected;
-                }
-              }}
-              {...props}
-            >
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              {items.map((item) => (
-                <MenuItem key={item.id} value={item.value}>
-                  {multiple && <Checkbox checked={field.value.indexOf(item.value) > -1} />}
-                  {item.value}
-                </MenuItem>
-              ))}
-            </Select>
-            {error && touched ? (
-              <span className={styles.error}>{error}</span>
-            ) : null}
-          </FormControl>
-        );
-      }}
-    </Field>
-  );
-};
+import { TextField, MenuItem } from '@material-ui/core';
+import { DatePicker } from '@material-ui/pickers';
+import { useField } from 'formik';
 
 interface ICustomInputProps {
   name: string;
+  label?: string;
+  disabled?: boolean;
+  multiline?: boolean;
+  rows?: number;
+}
+
+interface IDropdownProps {
+  name: string;
+  label?: string;
+  items: Array<{ id: string | number; value: string }>;
+  handleChange?: (event: React.ChangeEvent<any>) => void;
   disabled?: boolean;
 }
 
-export const CustomInput: React.FC<ICustomInputProps> = (props) => {
-  const { name, disabled = false } = props;
+export const CustomInput: React.FC<ICustomInputProps> = ({
+  name,
+  label,
+  disabled = false,
+  multiline = false,
+  rows = 1,
+  ...props
+}) => {
+  const [field, meta] = useField(name);
+  const hasError = meta.touched && !!meta.error;
+
   return (
-    <Field name={name}>
-      {({ field, meta, form }) => {
-        const { error, touched } = meta;
-        return (
-          <FormControl fullWidth>
-            <TextField
-              value={field.value}
-              variant="standard"
-              onChange={(e) => {
-                field.onChange(e);
-              }}
-              onBlur={(e) => {
-                form.setFieldTouched(name, true, false);
-                field.onBlur(e);
-              }}
-              name={name}
-              disabled={disabled}
-              className={styles.width}
-            />
-            {error && touched ? (
-              <span className={styles.error}>{error}</span>
-            ) : null}
-          </FormControl>
-        );
-      }}
-    </Field>
+    <TextField
+      {...field}
+      {...props}
+      fullWidth
+      variant="outlined"
+      label={label}
+      disabled={disabled}
+      multiline={multiline}
+      rows={rows}
+      error={hasError}
+      helperText={hasError ? meta.error : ''}
+    />
   );
 };
 
-interface ICustomDateTimePickerProps {
+export interface ICustomDateTimePickerProps {
   name: string;
-  handleChange?: (date: Date | null, name: string) => void;
+  label?: string;
+  disabled?: boolean;
+  handleChange?: (date: any) => void;
 }
 
-export const CustomDateTimePicker: React.FC<ICustomDateTimePickerProps> = (props) => {
-  const { name, handleChange } = props;
+export const CustomDateTimePicker: React.FC<ICustomDateTimePickerProps> = ({
+  name,
+  label,
+  disabled = false,
+  handleChange
+}) => {
+  const [field, meta, helpers] = useField(name);
+  const hasError = meta.touched && !!meta.error;
+
   return (
-    <Field name={name}>
-      {({ field, meta, form }) => {
-        const { error, touched } = meta;
-        return (
-          <FormControl fullWidth>
-            <MuiPickersUtilsProvider utils={DateFnsUtils}>
-              <DatePicker
-                clearable
-                autoOk
-                format="MM/dd/yyyy"
-                value={field.value ? new Date(field.value) : null}
-                onChange={(e) => {
-                  form.setFieldValue(name, e);
-                  if (handleChange) {
-                    handleChange(e, name);
-                  }
-                }}
-                onBlur={(e) => {
-                  form.setFieldTouched(name, true, false);
-                  field.onBlur(e);
-                }}
-                className={styles.width}
-              />
-            </MuiPickersUtilsProvider>
-            {error && touched ? (
-              <span className={styles.error}>{error}</span>
-            ) : null}
-          </FormControl>
-        );
+    <DatePicker
+      {...field}
+      label={label}
+      inputVariant="outlined"
+      fullWidth
+      format="MM/dd/yyyy"
+      error={hasError}
+      helperText={hasError ? meta.error : ''}
+      onChange={(date) => {
+        helpers.setValue(date);
+        if (handleChange) {
+          handleChange(date);
+        }
       }}
-    </Field>
+      disabled={disabled}
+    />
+  );
+};
+
+export const Dropdown: React.FC<IDropdownProps> = ({
+  name,
+  label,
+  items,
+  handleChange,
+  disabled = false,
+  ...props
+}) => {
+  const [field, meta] = useField(name);
+  const hasError = meta.touched && !!meta.error;
+
+  return (
+    <TextField
+      {...field}
+      {...props}
+      select
+      fullWidth
+      variant="outlined"
+      label={label}
+      error={hasError}
+      helperText={hasError ? meta.error : ''}
+      disabled={disabled}
+      onChange={(e) => {
+        field.onChange(e);
+        if (handleChange) {
+          handleChange(e);
+        }
+      }}
+    >
+      {items.map((item) => (
+        <MenuItem key={item.id} value={item.value}>
+          {item.value}
+        </MenuItem>
+      ))}
+    </TextField>
   );
 };

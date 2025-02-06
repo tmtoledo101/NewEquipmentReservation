@@ -2,19 +2,17 @@ import * as React from 'react';
 import styles from './ViewNewEquipmentRequest.module.scss';
 import { IViewNewEquipmentRequestProps } from './IViewNewEquipmentRequestProps';
 import { IViewNewEquipmentRequestState } from './IViewNewEquipmentRequestState';
-import { Grid, Paper, AppBar, Tabs, Tab, Button, Dialog, DialogTitle, DialogContent, Snackbar } from "@material-ui/core";
-import { Alert } from "@material-ui/lab";
+import { Grid, Paper, AppBar, Tabs, Tab, Button } from "@material-ui/core";
 import CloseIcon from "@material-ui/icons/Close";
 import { SharePointService } from './services/SharePointService';
 import { SearchForm } from './common/SearchForm';
 import { EquipmentTable } from './common/EquipmentTable';
 import { headerObj, STATUS } from './utils/helpers';
 import { IEquipmentRequest } from './interfaces/IEquipmentRequest';
-import * as moment from 'moment';
-import { ApproverEquipmentForm } from './ApproverEquipmentForm';
-import { IApproverFormValues } from './approverForm/interfaces/IApproverFormValues';
+import { EquipmentReservationForm } from './common/EquipmentReservationForm';
 
 export default class ViewNewEquipmentRequest extends React.Component<IViewNewEquipmentRequestProps, IViewNewEquipmentRequestState> {
+  private selectedRequest: IEquipmentRequest | null = null;
   constructor(props: IViewNewEquipmentRequestProps) {
     super(props);
 
@@ -26,13 +24,7 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
       releaseRequestList: [],
       returnRequestList: [],
       department: [],
-      showViewModal: false,
-      selectedRecord: null,
-      notification: {
-        show: false,
-        message: "",
-        severity: "success" as "success" | "error"
-      }
+      showModal: false
     };
   }
 
@@ -56,102 +48,15 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
     await this.getItems(fromDate, toDate, filterColumn);
   }
 
-  private handleViewAction = async (event: any, rowData: IEquipmentRequest): Promise<void> => {
-    const { tabValue } = this.state;
-    
-    if (tabValue === 2 || tabValue === 3) {
-      try {
-        const freshData = await SharePointService.getEquipmentRequestById(rowData.ID);
-        
-        this.setState({
-          showViewModal: true,
-          selectedRecord: freshData
-        });
-      } catch (error) {
-        console.error('Error fetching equipment request details:', error);
-        this.setState({
-          notification: {
-            show: true,
-            message: "Failed to load equipment details. Please try again.",
-            severity: "error"
-          }
-        });
-      }
+  private handleViewAction = (event: any, rowData: IEquipmentRequest): void => {
+    if (this.state.tabValue === 2 || this.state.tabValue === 3) { // For Release or For Return tabs
+      this.selectedRequest = rowData;
+      this.setState({ showModal: true });
     } else {
       window.open(
         `${this.props.siteUrl}/SitePages/DisplayEquipmentReservation_appge.aspx?pid=${rowData.ID}`,
-        "_blank"
+        "_self"
       );
-    }
-  }
-
-  private handleCloseModal = (): void => {
-    this.setState({
-      showViewModal: false,
-      selectedRecord: null,
-      notification: {
-        show: false,
-        message: "",
-        severity: "success"
-      }
-    });
-  }
-
-  private handleUpdateRequest = async (values: IApproverFormValues): Promise<void> => {
-    try {
-      const formattedValues = {
-        ...values,
-        fromDate: values.fromDate ? moment(values.fromDate).format('YYYY-MM-DD') : '',
-        toDate: values.toDate ? moment(values.toDate).format('YYYY-MM-DD') : '',
-        // Replace values.equipmentData?.[0]?.equipment with a manual check:
-        equipment:
-          values.equipmentData &&
-          values.equipmentData[0] &&
-          values.equipmentData[0].equipment
-            ? values.equipmentData[0].equipment
-            : '',
-        building: values.building || '',
-        contactNumber: values.contactNumber || '',
-        time: values.time || '',
-        // Replace values.equipmentData?.map(...) with a manual check:
-        equipmentData:
-          values.equipmentData
-            ? values.equipmentData.map(item => ({
-                ...item,
-                // Replace item.quantity?.toString():
-                quantity: item.quantity && item.quantity.toString() 
-                  ? item.quantity.toString() 
-                  : '0'
-              }))
-            : []
-      };
-      
-
-      await SharePointService.updateEquipmentRequest(formattedValues);
-      this.setState({
-        notification: {
-          show: true,
-          message: "Request updated successfully",
-          severity: "success"
-        }
-      });
-      
-      const fromDate = new Date();
-      fromDate.setMonth(fromDate.getMonth() - 1);
-      const toDate = new Date();
-      await this.getItems(fromDate, toDate);
-
-      setTimeout(() => {
-        this.handleCloseModal();
-      }, 1500);
-    } catch (error) {
-      this.setState({
-        notification: {
-          show: true,
-          message: "Failed to update request. Please try again.",
-          severity: "error"
-        }
-      });
     }
   }
 
@@ -164,8 +69,9 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
     
     if (department.length === 0) {
       const currentUser = await SharePointService.getCurrentUser();
+      //department = await SharePointService.getDepartments(currentUser.Email);
       console.log(`CurrentUser:`,currentUser.Title);
-      department = await SharePointService.getDepartments(currentUser.Title);
+       department = await SharePointService.getDepartments(currentUser.Title);
     }
 
     const requests = await SharePointService.getEquipmentRequests(from, to, department, column);
@@ -197,27 +103,31 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
     });
   }
 
-  public async componentDidMount(): Promise<void> {
-    const currentUser = await SharePointService.getCurrentUser();
-    const { ownerEmails, departmentsByOwner } = await SharePointService.getEquipmentOwners();
-    console.log(`OwnerEmails:`,ownerEmails);
-    console.log(`currentUserEmail:`,currentUser.Title);
-    if (ownerEmails.includes(currentUser.Title)) {
-      const departments = departmentsByOwner[currentUser.Title];
-      this.setState({
-        menuTabs: ["By Reference No", "Past Request", "For Release", "For Return"],
-        department: departments,
-      });
-    }
+
+
+//TERENCE change this to Title property to Email !!!!
+public async componentDidMount(): Promise<void> {
+  const currentUser = await SharePointService.getCurrentUser();
+  const { ownerEmails, departmentsByOwner } = await SharePointService.getEquipmentOwners();
+  console.log(`OwnerEmails:`,ownerEmails);
+  console.log(`currentUserEmail:`,currentUser.Title);
+  if (ownerEmails.includes(currentUser.Title)) {
+    const departments = departmentsByOwner[currentUser.Title];
+    this.setState({
+      menuTabs: ["By Reference No", "Past Request", "For Release", "For Return"],
+      department: departments,
+    });
   }
+}
 
   public render(): React.ReactElement<IViewNewEquipmentRequestProps> {
-    const { tabValue, menuTabs, showViewModal, selectedRecord, notification } = this.state;
+    const { tabValue, menuTabs, showModal } = this.state;
 
     return (
-      <Grid container spacing={4}>
-        <Grid item xs={12}>
-          <h2><b>View Equipment Reservation Request</b></h2>
+      <>
+        <Grid container spacing={4}>
+          <Grid item xs={12}>
+            <h2><b>View Equipment Reservation Request</b></h2>
         </Grid>
         <Grid item xs={12}>
           <Paper square className={styles.paper}>
@@ -269,47 +179,21 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
             Close
           </Button>
         </Grid>
+        </Grid>
 
-        <Dialog 
-          open={showViewModal}
-          onClose={this.handleCloseModal}
-          maxWidth="lg"
-          fullWidth
-          PaperProps={{
-            style: {
-              minHeight: '80vh'
-            }
+        {showModal && (
+        <EquipmentReservationForm
+          isOpen={showModal}
+          selectedRequest={this.selectedRequest}
+          onClose={() => this.setState({ showModal: false })}
+          onUpdateSuccess={async () => {
+            const filterColumn = this.state.department.length > 0 ? "BorrowedFrom" : "Department";
+            await this.getItems(new Date(), new Date(), filterColumn);
           }}
-        >
-          <DialogTitle style={{ backgroundColor: '#f5f5f5', padding: '16px 24px' }}>
-            <div style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>
-              Equipment Reservation Details
-            </div>
-          </DialogTitle>
-          <DialogContent>
-            {selectedRecord && (
-              <ApproverEquipmentForm
-                selectedRecord={selectedRecord}
-                onSubmit={this.handleUpdateRequest}
-                onCancel={this.handleCloseModal}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
-
-        <Snackbar 
-          open={notification.show} 
-          autoHideDuration={6000} 
-          onClose={() => this.setState({ notification: { ...notification, show: false } })}
-        >
-          <Alert 
-            onClose={() => this.setState({ notification: { ...notification, show: false } })} 
-            severity={notification.severity}
-          >
-            {notification.message}
-          </Alert>
-        </Snackbar>
-      </Grid>
+          siteUrl={this.props.siteUrl}
+        />
+        )}
+      </>
     );
   }
 }

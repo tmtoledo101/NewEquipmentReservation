@@ -6,7 +6,44 @@ import * as moment from "moment";
 import { IEquipmentRequest } from "../interfaces/IEquipmentRequest";
 import { dateConverter } from "../utils/helpers";
 
+export interface IFacilityMapItem {
+  Quantity: number;
+  AssetNumber?: string;
+}
+
+export interface IEquipmentMapItem {
+  [key: string]: any;
+}
+
 export class SharePointService {
+  public static async getEquipments(): Promise<{
+    buildingList: { id: string; value: string }[];
+    buildBorrowedMap: { [key: string]: any };
+    buildEquipmentMap: { [key: string]: IEquipmentMapItem };
+    originalEquipmentList: any[];
+  }> {
+    // Implementation here
+    return {
+      buildingList: [],
+      buildBorrowedMap: {},
+      buildEquipmentMap: {},
+      originalEquipmentList: []
+    };
+  }
+
+  public static async getTime(): Promise<{ id: string; value: string }[]> {
+    // Implementation here
+    return [];
+  }
+
+  public static async updateRequest(
+    id: number,
+    values: any,
+    equipmentData: any[],
+    files: File[]
+  ): Promise<void> {
+    // Implementation here
+  }
   public static async getCurrentUser() {
     return await sp.web.currentUser.get();
   }
@@ -105,66 +142,5 @@ export class SharePointService {
       releasedDate: item["Released Date"],
       borrowedFrom: item.BorrowedFrom
     }));
-  }
-
-  public static async getEquipmentRequestById(id: number): Promise<IEquipmentRequest> {
-    try {
-      const item = await sp.web.lists
-        .getByTitle("NewEquipmentRequestList")
-        .items.getById(id)
-        .select("*")
-        .get();
-
-      return {
-        building: item.Building,
-        fromDate: item.FromDate,
-        toDate: item.ToDate,
-        referenceNumber: item.ReferenceNumber,
-        requestedBy: item.RequestedBy,
-        department: item.Department,
-        contactNumber: item.ContactNumber,
-        status: item.Status,
-        time: item.Time,
-        equipment: item.EquipmentData,
-        equipmentData: item.EquipmentData ? JSON.parse(item.EquipmentData) : [],
-        ID: item.Id,
-        returnedBy: item["Returned By"],
-        returnedTo: item["Returned To"],
-        returnedDate: item["Returned Date"],
-        releasedTo: item["Released To"],
-        releasedBy: item["Released By"],
-        releasedDate: item["Released Date"],
-        borrowedFrom: item.BorrowedFrom,
-        remarks: item.Remarks
-      };
-    } catch (error) {
-      console.error('Error fetching equipment request:', error);
-      throw error;
-    }
-  }
-
-  public static async updateEquipmentRequest(request: IEquipmentRequest): Promise<void> {
-    const updateData = {
-      Building: request.building,
-      FromDate: request.fromDate,
-      ToDate: request.toDate,
-      ContactNumber: request.contactNumber,
-      Status: request.status,
-      Time: request.time,
-      BorrowedFrom: request.borrowedFrom,
-      EquipmentData: request.equipmentData ? JSON.stringify(request.equipmentData) : null,
-      Remarks: request.remarks,
-      "Released To": request.releasedTo,
-      "Released By": request.releasedBy,
-      "Released Date": request.releasedDate,
-      "Returned To": request.returnedTo,
-      "Returned By": request.returnedBy,
-      "Returned Date": request.returnedDate
-    };
-
-    await sp.web.lists
-      .getByTitle("NewEquipmentRequestList")
-      .items.getById(request.ID)
-      .update(updateData);
   }
 }

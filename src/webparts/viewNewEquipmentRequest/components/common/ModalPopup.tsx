@@ -1,44 +1,37 @@
 import * as React from 'react';
-import { Dialog, DialogTitle, DialogContent, IconButton } from '@material-ui/core';
-import CloseIcon from '@material-ui/icons/Close';
-import styles from '../ViewNewEquipmentRequest.module.scss';
+import { Dialog, DialogTitle } from '@material-ui/core';
 
 interface IModalPopupProps {
-  title: string;
   open: boolean;
-  hideCloseIcon?: boolean;
+  title: string;
   onClose: () => void;
   children: React.ReactNode;
+  maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false;
+  fullWidth?: boolean;
 }
 
 export const ModalPopup: React.FC<IModalPopupProps> = ({
-  title,
   open,
-  hideCloseIcon = false,
+  title,
   onClose,
-  children
+  children,
+  maxWidth = 'md',
+  fullWidth = false,
 }) => {
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      className={styles.modalDialog}
+      maxWidth={maxWidth}
+      fullWidth={fullWidth}
+      aria-labelledby="modal-dialog-title"
     >
-      <DialogTitle>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{title}</span>
-          {!hideCloseIcon && (
-            <IconButton onClick={onClose} size="small">
-              <CloseIcon />
-            </IconButton>
-          )}
-        </div>
-      </DialogTitle>
-      <DialogContent>
-        {children}
-      </DialogContent>
+      {title && (
+        <DialogTitle id="modal-dialog-title">
+          {title}
+        </DialogTitle>
+      )}
+      {children}
     </Dialog>
   );
 };
