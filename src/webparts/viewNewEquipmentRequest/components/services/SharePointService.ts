@@ -4,7 +4,7 @@ import "@pnp/sp/lists";
 import "@pnp/sp/items";
 import * as moment from "moment";
 import { IEquipmentRequest } from "../interfaces/IEquipmentRequest";
-import { dateConverter } from "../utils/helpers";
+import { dateConverter, arrayToDropDownValues } from "../utils/helpers";
 
 export interface IFacilityMapItem {
   Quantity: number;
@@ -120,8 +120,17 @@ export class SharePointService {
   }
 
   public static async getTime(): Promise<{ id: string; value: string }[]> {
-    // Implementation here
-    return [];
+    try {
+      const timeData: any[] = await sp.web.lists
+        .getByTitle("Time")
+        .items.select("Time")
+        .get();
+
+      return arrayToDropDownValues(timeData.map(item => item.Time));
+    } catch (error) {
+      console.error('Error in getTime:', error);
+      throw new Error(`Failed to fetch time data: ${error.message}`);
+    }
   }
 
   public static async updateRequest(

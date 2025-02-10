@@ -59,3 +59,10 @@ export const STATUS = {
   RETURN: "For Return",
   RELEASE: "For Release"
 };
+
+export const arrayToDropDownValues = (array: string[]): { id: string; value: string }[] => {
+  return array.map(item => ({
+    id: item,
+    value: item
+  }));
+};

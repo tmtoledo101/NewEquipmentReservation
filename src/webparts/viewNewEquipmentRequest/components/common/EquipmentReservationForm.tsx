@@ -378,7 +378,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       <Dropdown
                         items={timeList}
                         name="time"
-                
+                        handleChange={() => setEquipmentData([])}
                       />
                     </div>
                   </Grid>
