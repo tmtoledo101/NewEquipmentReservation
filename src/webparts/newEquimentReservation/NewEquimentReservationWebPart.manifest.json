@@ -17,7 +17,7 @@
   "preconfiguredEntries": [{
     "groupId": "5c03119e-3074-46fd-976b-c60198311f70", // Other
     "group": { "default": "Other" },
-    "title": { "default": "newEquimentReservation" },
+    "title": { "default": "newEquimentReservation_2025" },
     "description": { "default": "newEquimentReservation description" },
     "officeFabricIconFontName": "Page",
     "properties": {

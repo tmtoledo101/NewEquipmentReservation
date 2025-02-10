@@ -9,4 +9,5 @@ export interface IViewNewEquipmentRequestState {
   releaseRequestList: IEquipmentRequest[];
   returnRequestList: IEquipmentRequest[];
   department: string[];
+  departmentSectorMap: { [key: string]: string };
 }

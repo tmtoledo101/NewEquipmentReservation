@@ -26,8 +26,10 @@ export class SharePointService {
         "Department/FieldValuesAsText",
         "EmployeeName/EMail",
       )
+      .top(5000) 
       .get();
-
+    console.log(`deparmentData:`,deparmentData);
+    console.log(`deparmentData.length:`,deparmentData.length);
     if (deparmentData.length === 0) {
       throw new Error('User details is not present in department list, kindly contact admin.');
     }

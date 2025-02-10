@@ -24,6 +24,7 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
       releaseRequestList: [],
       returnRequestList: [],
       department: [],
+      departmentSectorMap: {},
       showModal: false
     };
   }
@@ -62,9 +63,9 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
     
     if (department.length === 0) {
       const currentUser = await SharePointService.getCurrentUser();
-      //department = await SharePointService.getDepartments(currentUser.Email);
-      console.log(`CurrentUser:`,currentUser.Title);
-       department = await SharePointService.getDepartments(currentUser.Title);
+      const { departments, departmentSectorMap } = await SharePointService.getDepartments(currentUser.Title);
+      department = departments.map(dept => dept.value);
+      this.setState({ department, departmentSectorMap });
     }
 
     const requests = await SharePointService.getEquipmentRequests(from, to, department, column);
@@ -96,22 +97,19 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
     });
   }
 
-
-
-//TERENCE change this to Title property to Email !!!!
-public async componentDidMount(): Promise<void> {
-  const currentUser = await SharePointService.getCurrentUser();
-  const { ownerEmails, departmentsByOwner } = await SharePointService.getEquipmentOwners();
-  console.log(`OwnerEmails:`,ownerEmails);
-  console.log(`currentUserEmail:`,currentUser.Title);
-  if (ownerEmails.includes(currentUser.Title)) {
-    const departments = departmentsByOwner[currentUser.Title];
-    this.setState({
-      menuTabs: ["By Reference No", "Past Request", "For Release", "For Return"],
-      department: departments,
-    });
+  public async componentDidMount(): Promise<void> {
+    const currentUser = await SharePointService.getCurrentUser();
+    const { ownerEmails, departmentsByOwner } = await SharePointService.getEquipmentOwners();
+    console.log(`OwnerEmails:`,ownerEmails);
+    console.log(`currentUserEmail:`,currentUser.Title);
+    if (ownerEmails.includes(currentUser.Title)) {
+      const departments = departmentsByOwner[currentUser.Title];
+      this.setState({
+        menuTabs: ["By Reference No", "Past Request", "For Release", "For Return"],
+        department: departments,
+      });
+    }
   }
-}
 
   public render(): React.ReactElement<IViewNewEquipmentRequestProps> {
     const { tabValue, menuTabs, showModal } = this.state;
@@ -121,70 +119,70 @@ public async componentDidMount(): Promise<void> {
         <Grid container spacing={4}>
           <Grid item xs={12}>
             <h2><b>View Equipment Reservation Request</b></h2>
-        </Grid>
-        <Grid item xs={12}>
-          <Paper square className={styles.paper}>
-            <AppBar position="static" color="default">
-              <Tabs
-                value={tabValue}
-                indicatorColor="primary"
-                textColor="primary"
-                onChange={this.handleTabChange}
-                aria-label="tabs example"
-                variant="scrollable"
-                scrollButtons="auto"
-              >
-                {menuTabs.map((item: string, index: number) => (
-                  <Tab key={index} label={item} className={styles.tabbar} />
-                ))}
-              </Tabs>
-            </AppBar>
-          </Paper>
-        </Grid>
+          </Grid>
+          <Grid item xs={12}>
+            <Paper square className={styles.paper}>
+              <AppBar position="static" color="default">
+                <Tabs
+                  value={tabValue}
+                  indicatorColor="primary"
+                  textColor="primary"
+                  onChange={this.handleTabChange}
+                  aria-label="tabs example"
+                  variant="scrollable"
+                  scrollButtons="auto"
+                >
+                  {menuTabs.map((item: string, index: number) => (
+                    <Tab key={index} label={item} className={styles.tabbar} />
+                  ))}
+                </Tabs>
+              </AppBar>
+            </Paper>
+          </Grid>
 
-        <Grid item xs={12}>
-          <SearchForm onSearch={this.handleSearch} />
-        </Grid>
+          <Grid item xs={12}>
+            <SearchForm onSearch={this.handleSearch} />
+          </Grid>
 
-        <Grid item xs={12}>
-          <Paper variant="outlined" className={styles.paper}>
-            <EquipmentTable
-              title={headerObj[tabValue.toString()]}
-              data={this.getData()}
-              tabValue={tabValue}
-              onViewClick={this.handleViewAction}
-            />
-          </Paper>
-        </Grid>
+          <Grid item xs={12}>
+            <Paper variant="outlined" className={styles.paper}>
+              <EquipmentTable
+                title={headerObj[tabValue.toString()]}
+                data={this.getData()}
+                tabValue={tabValue}
+                onViewClick={this.handleViewAction}
+              />
+            </Paper>
+          </Grid>
 
-        <Grid item xs={12}>
-          <Button
-            type="button"
-            variant="contained"
-            startIcon={<CloseIcon />}
-            onClick={this.handleRedirect}
-            style={{
-              color: "lightgrey",
-              background: "grey",
-              float: "right",
-            }}
-          >
-            Close
-          </Button>
-        </Grid>
+          <Grid item xs={12}>
+            <Button
+              type="button"
+              variant="contained"
+              startIcon={<CloseIcon />}
+              onClick={this.handleRedirect}
+              style={{
+                color: "lightgrey",
+                background: "grey",
+                float: "right",
+              }}
+            >
+              Close
+            </Button>
+          </Grid>
         </Grid>
 
         {showModal && (
-        <EquipmentReservationForm
-          isOpen={showModal}
-          selectedRequest={this.selectedRequest}
-          onClose={() => this.setState({ showModal: false })}
-          onUpdateSuccess={async () => {
-            const filterColumn = this.state.department.length > 0 ? "BorrowedFrom" : "Department";
-            await this.getItems(new Date(), new Date(), filterColumn);
-          }}
-          siteUrl={this.props.siteUrl}
-        />
+          <EquipmentReservationForm
+            isOpen={showModal}
+            selectedRequest={this.selectedRequest}
+            onClose={() => this.setState({ showModal: false })}
+            onUpdateSuccess={async () => {
+              const filterColumn = this.state.department.length > 0 ? "BorrowedFrom" : "Department";
+              await this.getItems(new Date(), new Date(), filterColumn);
+            }}
+            siteUrl={this.props.siteUrl}
+          />
         )}
       </>
     );

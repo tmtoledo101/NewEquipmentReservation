@@ -44,28 +44,43 @@ export class SharePointService {
   ): Promise<void> {
     // Implementation here
   }
+
   public static async getCurrentUser() {
     return await sp.web.currentUser.get();
   }
 
-  public static async getDepartments(email: string): Promise<string[]> {
+  public static async getDepartments(email: string): Promise<{
+    departments: { id: string; value: string }[];
+    departmentSectorMap: { [key: string]: string };
+  }> {
     const deparmentData: any[] = await sp.web.lists
       .getByTitle("EquipUsersPerDepartment")
       .items.select(
         "EmployeeName/EMail",
         "Department/Department",
-      ).filter(`EmployeeName/EMail eq '${email}'`)
+        "Department/Sector"
+      ).filter(`EmployeeName/Title eq '${email}'`)
       .expand(
         "Department/FieldValuesAsText",
-        "EmployeeName/EMail",
+        "EmployeeName/EMail"
       )
+      .top(5000) 
       .get();
-  
-    return deparmentData.map(item => item.Department.Department);
+    
+    const departmentSectorMap = {};
+    deparmentData.forEach(item => {
+      departmentSectorMap[item.Department.Department] = item.Department.Sector;
+    });
+
+    return {
+      departments: deparmentData.map(item => ({
+        id: item.Department.Department,
+        value: item.Department.Department
+      })),
+      departmentSectorMap
+    };
   }
 
-  //TERENCE change this to Title property to Email !!!! 
-// "EquipmentOwner/Title" to  "EquipmentOwner/EMail"
   public static async getEquipmentOwners(): Promise<{ownerEmails: string[], departmentsByOwner: {[key: string]: string[]}}> {
     const equipmentList: any[] = await sp.web.lists
       .getByTitle("EquipmentOwner")
@@ -77,7 +92,7 @@ export class SharePointService {
         "Department/FieldValuesAsText"
       )
       .get();
-//TERENCE change this to Title property to Email !!!! 
+
     console.log(`equipmentList:`,equipmentList);
     const ownerEmails = equipmentList.map(item => item.EquipmentOwner.Title);
     const departmentsByOwner = {};
@@ -97,17 +112,13 @@ export class SharePointService {
   }
 
   public static async getEquipmentRequests(from: Date, to: Date, departments: string[], filterColumn: string = 'Department'): Promise<IEquipmentRequest[]> {
-   
-    // Format dates as UTC midnight to ensure consistent date comparison
     const fromDateStr = moment(from).startOf('day').utc().format("YYYY-MM-DD[T]00:00:00[Z]");
     const toDateStr = moment(to).endOf('day').utc().format("YYYY-MM-DD[T]23:59:59[Z]");
     
     const dateRange = `(FromDate le datetime'${toDateStr}' and ToDate ge datetime'${fromDateStr}')`;
     
-    // Build department filter only if departments array is not empty
     let filterQuery = dateRange;
     if (departments && departments.length > 0) {
-      // Escape any single quotes in department names and build OR conditions
       const deptQuery = departments
         .map(dept => `${filterColumn} eq '${dept.replace(/'/g, "''")}'`)
         .join(' or ');

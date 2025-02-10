@@ -102,6 +102,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
   }
 
   const [departmentList, setDepartmentList] = React.useState<IDropdownItem[]>([]);
+  const [departmentSectorMap, setDepartmentSectorMap] = React.useState<{ [key: string]: string }>({});
   const [buildingList, setBuildingList] = React.useState<IDropdownItem[]>([]);
   const [borrowedFromList, setBorrowedFromList] = React.useState<IDropdownItem[]>([]);
   const [timeList, setTimeList] = React.useState<IDropdownItem[]>([]);
@@ -126,11 +127,10 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
       if (isOpen && selectedRequest) {
         try {
           const user = await SharePointService.getCurrentUser();
-          const departments = await SharePointService.getDepartments(user.Title);
-          setDepartmentList(departments.map(dept => ({
-            id: dept,
-            value: dept
-          })));
+          const { departments, departmentSectorMap: deptSectorMap } = await SharePointService.getDepartments(user.Title);
+          setDepartmentList(departments);
+          console.log(`Departments: ${departmentList}, Department Sector Map: ${deptSectorMap}`);
+          setDepartmentSectorMap(deptSectorMap);
 
           const {
             buildingList: buildings,
@@ -146,15 +146,18 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
           // Set initial values
           const formik = formikRef.current;
           if (formik) {
-            formik.setFieldValue("requestedBy", selectedRequest.requestedBy || "");
-            formik.setFieldValue("department", selectedRequest.department || "");
-            formik.setFieldValue("contactNumber", selectedRequest.contactNumber || "");
-            formik.setFieldValue("building", selectedRequest.building || "");
-            formik.setFieldValue("borrowedFrom", selectedRequest.borrowedFrom || "");
-            formik.setFieldValue("time", selectedRequest.time || "");
-            formik.setFieldValue("fromDate", selectedRequest.fromDate ? new Date(selectedRequest.fromDate) : null);
-            formik.setFieldValue("toDate", selectedRequest.toDate ? new Date(selectedRequest.toDate) : null);
-            formik.setFieldValue("remarks", selectedRequest.remarks || "");
+            formik.setValues({
+              ...formik.values,
+              requestedBy: selectedRequest.requestedBy || "",
+              department: selectedRequest.department || "",
+              contactNumber: selectedRequest.contactNumber || "",
+              building: selectedRequest.building || "",
+              borrowedFrom: selectedRequest.borrowedFrom || "",
+              time: selectedRequest.time || "",
+              fromDate: selectedRequest.fromDate ? new Date(selectedRequest.fromDate) : null,
+              toDate: selectedRequest.toDate ? new Date(selectedRequest.toDate) : null,
+              remarks: selectedRequest.remarks || "",
+            });
           }
 
         } catch (error) {
@@ -261,7 +264,6 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       <Dropdown
                         items={departmentList}
                         name="department"
-                        disabled
                       />
                     </div>
                   </Grid>
