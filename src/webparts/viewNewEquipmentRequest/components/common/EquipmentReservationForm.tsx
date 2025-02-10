@@ -134,12 +134,15 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
           console.log(`Departments: ${departmentList}, Department Sector Map: ${deptSectorMap}`);
           setDepartmentSectorMap(deptSectorMap);
 
+          const equipmentResponse = await SharePointService.getEquipments();
+          console.log('Debug - SharePoint Equipment Response:', equipmentResponse);
+          
           const {
             buildingList: buildings,
             buildBorrowedMap: borrowedMap,
             buildEquipmentMap,
             originalEquipmentList
-          } = await SharePointService.getEquipments();
+          } = equipmentResponse;
           
           setBuildingList(buildings);
           setBuildBorrowedMap(borrowedMap);
@@ -163,24 +166,46 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
             });
 
             // Handle building and borrowedFrom relationship
+            console.log('Debug - Selected Request:', {
+              building: selectedRequest.building,
+              borrowedFrom: selectedRequest.borrowedFrom
+            });
+
             if (selectedRequest.building) {
               formik.setFieldValue("building", selectedRequest.building);
               
               // Update borrowedFromList based on selected building
               let borrowedList: any[] = [];
+              console.log('Debug - Borrowed Map:', {
+                building: selectedRequest.building,
+                mapData: borrowedMap[selectedRequest.building]
+              });
+
               if (borrowedMap[selectedRequest.building]) {
-                borrowedList = Array.from(borrowedMap[selectedRequest.building])
-                  .filter((item: any) => !isFssManaged ? item.exclusiveTo !== 'FSS' : true)
-                  .map((item: any) => ({
-                    id: item.borrowed,
-                    value: item.borrowed
-                  }));
+                console.log('Debug - FSS Managed:', isFssManaged);
                 
+                const filteredItems = Array.from(borrowedMap[selectedRequest.building])
+                  .filter((item: any) => !isFssManaged ? item.exclusiveTo !== 'FSS' : true);
+                
+                console.log('Debug - After FSS Filter:', filteredItems);
+                
+                borrowedList = filteredItems.map((item: any) => ({
+                  id: item.borrowed,
+                  value: item.borrowed
+                }));
+                
+                console.log('Debug - Final Borrowed List:', borrowedList);
                 setBorrowedFromList(borrowedList);
 
                 // Set borrowedFrom value after list is updated
-                if (selectedRequest.borrowedFrom &&
-                    borrowedList.some(item => item.value === selectedRequest.borrowedFrom)) {
+                const hasMatch = borrowedList.some(item => item.value === selectedRequest.borrowedFrom);
+                console.log('Debug - Borrowed From Match:', {
+                  selectedValue: selectedRequest.borrowedFrom,
+                  hasMatch,
+                  borrowedList
+                });
+
+                if (selectedRequest.borrowedFrom && hasMatch) {
                   formik.setFieldValue("borrowedFrom", selectedRequest.borrowedFrom);
                 }
               }
@@ -318,7 +343,6 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       <Dropdown
                         items={borrowedFromList}
                         name="borrowedFrom"
-                        disabled
                       />
                     </div>
                   </Grid>
@@ -329,7 +353,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       <Dropdown
                         items={timeList}
                         name="time"
-                        disabled
+                
                       />
                     </div>
                   </Grid>
@@ -339,7 +363,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       <div style={formStyles.label}>Date of use - From</div>
                       <CustomDateTimePicker
                         name="fromDate"
-                        disabled
+               
                       />
                     </div>
                   </Grid>
@@ -349,7 +373,6 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       <div style={formStyles.label}>Date of use - To</div>
                       <CustomDateTimePicker
                         name="toDate"
-                        disabled
                       />
                     </div>
                   </Grid>

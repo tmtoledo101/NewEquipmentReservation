@@ -12,85 +12,99 @@ export interface IFacilityMapItem {
 }
 
 export interface IEquipmentMapItem {
-  [key: string]: any;
+  equipment: string;
+  borrowed: string;
+  assetNumber: string;
+  blockedDateAM: Date | null;
+  blockedDatePM: Date | null;
+  blockedDateWholeDay: Date | null;
 }
 
 export class SharePointService {
   public static async getEquipments(): Promise<{
     buildingList: { id: string; value: string }[];
     buildBorrowedMap: { [key: string]: any };
-    buildEquipmentMap: { [key: string]: IEquipmentMapItem };
+    buildEquipmentMap: { [key: string]: { [id: number]: IEquipmentMapItem } };
     originalEquipmentList: any[];
   }> {
     try {
       const items: any[] = await sp.web.lists
-      .getByTitle("NewEquipment")
-      .items.select(
-        "Building",
-        "BorrowedFrom/Department",
-        "Equiupment",
-        "AssetNumber",
-        "ID",
-        "BlockedDateAM",
-        "BlockedDatePM",
-        "BlockedDateWholeDay",
-        "ExclusiveTo",
-      )
-      .expand("BorrowedFrom/FieldValuesAsText")
-      .top(5000)
-      .get();
+        .getByTitle("NewEquipment")
+        .items.select(
+          "Building",
+          "BorrowedFrom/Department",
+          "Equiupment",
+          "AssetNumber",
+          "ID",
+          "BlockedDateAM",
+          "BlockedDatePM",
+          "BlockedDateWholeDay",
+          "ExclusiveTo"
+        )
+        .expand("BorrowedFrom/FieldValuesAsText")
+        .top(5000)
+        .get();
 
+      // Initialize data structures with proper typing
       const buildingList: { id: string; value: string }[] = [];
-      const buildBorrowedMap: { [key: string]: any[] } = {};
-      const buildEquipmentMap: { [key: string]: IEquipmentMapItem } = {};
+      const buildBorrowedMap: { [key: string]: Array<{ borrowed: string; exclusiveTo: string }> } = {};
+      const buildEquipmentMap: { [key: string]: { [id: number]: IEquipmentMapItem } } = {};
 
+      // Process each item using a more structured approach
       items.forEach(item => {
-        // Build building list
-        if (item.Building && !buildingList.find(b => b.id === item.Building)) {
+        if (!item.Building) return;
+
+        // Process building list - using Set for uniqueness
+        if (!buildingList.some(b => b.id === item.Building)) {
           buildingList.push({
             id: item.Building,
             value: item.Building
           });
         }
 
-        // Build borrowed map
-        if (item.Building) {
+        // Process borrowed map with proper typing and validation
+        const borrowedDepartment = item.BorrowedFrom && item.BorrowedFrom.Department;        
+        if (borrowedDepartment) {
           if (!buildBorrowedMap[item.Building]) {
             buildBorrowedMap[item.Building] = [];
           }
-          if (item.Borrowed) {
-            // Only add if not already in the array
-            const borrowedItem = {
-              borrowed: item.Borrowed,
-              exclusiveTo: item.ExclusiveTo || ''
-            };
-            if (!buildBorrowedMap[item.Building].find(b => b.borrowed === item.Borrowed)) {
-              buildBorrowedMap[item.Building].push(borrowedItem);
-            }
+
+          const borrowedItem = {
+            borrowed: borrowedDepartment,
+            exclusiveTo: item.ExclusiveTo || ''
+          };
+
+          // Ensure no duplicates using proper type checking
+          if (!buildBorrowedMap[item.Building].some(b => b.borrowed === borrowedDepartment)) {
+            buildBorrowedMap[item.Building].push(borrowedItem);
           }
         }
 
-        // Build equipment map
-        if (item.Building && item.Borrowed) {
-          const key = `${item.Building}-${item.Borrowed}`;
+        // Process equipment map with proper validation
+        if (borrowedDepartment) {
+          const key = `${item.Building}-${borrowedDepartment}`;
           if (!buildEquipmentMap[key]) {
-            buildEquipmentMap[key] = {};
+            buildEquipmentMap[key] = {} as { [id: number]: IEquipmentMapItem };
           }
+
+          // Set all required properties with proper type handling
           buildEquipmentMap[key][item.ID] = {
-            title: item.Title,
-            description: item.Description,
-            status: item.Status,
-            category: item.Category,
-            borrowed: item.Borrowed
+            equipment: item.Equipment || '',
+            borrowed: borrowedDepartment,
+            assetNumber: item.AssetNumber || '',
+            blockedDateAM: item.BlockedDateAM ? new Date(item.BlockedDateAM) : null,
+            blockedDatePM: item.BlockedDatePM ? new Date(item.BlockedDatePM) : null,
+            blockedDateWholeDay: item.BlockedDateWholeDay ? new Date(item.BlockedDateWholeDay) : null
           };
         }
       });
 
-      console.log('Equipment data:', {
-        buildingList,
-        buildBorrowedMap,
-        buildEquipmentMap,
-        items
+      // Log processed data for debugging
+      console.log('Processed equipment data:', {
+        buildingCount: buildingList.length,
+        borrowedMapKeys: Object.keys(buildBorrowedMap).length,
+        equipmentMapKeys: Object.keys(buildEquipmentMap).length,
+        totalItems: items.length
       });
 
       return {
@@ -101,7 +115,7 @@ export class SharePointService {
       };
     } catch (error) {
       console.error('Error in getEquipments:', error);
-      throw error;
+      throw new Error(`Failed to fetch equipment data: ${error.message}`);
     }
   }
 
