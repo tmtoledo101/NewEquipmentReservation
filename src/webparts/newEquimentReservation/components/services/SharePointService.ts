@@ -26,6 +26,7 @@ export class SharePointService {
         "Department/FieldValuesAsText",
         "EmployeeName/EMail",
       )
+      .top(5000)
       .get();
 
     if (deparmentData.length === 0) {
@@ -62,6 +63,7 @@ export class SharePointService {
         "ExclusiveTo",
       )
       .expand("BorrowedFrom/FieldValuesAsText")
+      .top(5000)
       .get();
 
     const buildObj = {};
