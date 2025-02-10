@@ -154,7 +154,7 @@ export class SharePointService {
       )
       .top(5000) 
       .get();
-    
+    console.log(`deparmentData:`,deparmentData);
     const departmentSectorMap = {};
     deparmentData.forEach(item => {
       departmentSectorMap[item.Department.Department] = item.Department.Sector;
@@ -179,6 +179,7 @@ export class SharePointService {
         "EquipmentOwner/Title",
         "Department/FieldValuesAsText"
       )
+      .top(5000)
       .get();
 
     console.log(`equipmentList:`,equipmentList);
@@ -204,7 +205,7 @@ export class SharePointService {
     const toDateStr = moment(to).endOf('day').utc().format("YYYY-MM-DD[T]23:59:59[Z]");
     
     const dateRange = `(FromDate le datetime'${toDateStr}' and ToDate ge datetime'${fromDateStr}')`;
-    
+    console.log(`departments:`,departments);
     let filterQuery = dateRange;
     if (departments && departments.length > 0) {
       const deptQuery = departments
@@ -212,7 +213,7 @@ export class SharePointService {
         .join(' or ');
       filterQuery += ` and (${deptQuery})`;
     }
-
+    console.log(`filterQuery:`,filterQuery);
     const requestItems = await sp.web.lists
       .getByTitle("NewEquipmentRequestList")
       .items.select("*")
@@ -221,6 +222,7 @@ export class SharePointService {
       .top(5000)
       .get();
 
+      console.log(`requestItems:`,requestItems);
     return requestItems.map(item => ({
       building: item.Building,
       fromDate: item.FromDate,

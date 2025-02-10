@@ -260,6 +260,30 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
     }
   };
 
+  const handleBuilding = React.useCallback((e: any) => {
+    const { value } = e.target;
+    
+    if (buildBorrowedMap && buildBorrowedMap[value]) {
+      const filteredItems = Array.from(buildBorrowedMap[value])
+        .filter((item: any) => !isFssManaged ? item.exclusiveTo !== 'FSS' : true)
+        .map((item: any) => item.borrowed);
+      
+      const uniqueBorrowed = [...new Set(filteredItems)];
+      const borrowedList = uniqueBorrowed.map(item => ({
+        id: item,
+        value: item
+      }));
+      
+      setBorrowedFromList(borrowedList);
+    } else {
+      setBorrowedFromList([]);
+    }
+    
+    setEquipmentData([]);
+    formikRef.current.setFieldValue("building", value);
+    formikRef.current.setFieldValue("borrowedFrom", "");
+  }, [buildBorrowedMap, isFssManaged, formikRef]);
+
   const handleFileChange = (uploadedFiles: File[]) => {
     setFiles(uploadedFiles);
   };
@@ -333,6 +357,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       <Dropdown
                         items={buildingList}
                         name="building"
+                        handleChange={handleBuilding}
                       />
                     </div>
                   </Grid>

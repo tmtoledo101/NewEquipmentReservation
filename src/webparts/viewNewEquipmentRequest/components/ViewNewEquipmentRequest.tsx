@@ -10,6 +10,7 @@ import { EquipmentTable } from './common/EquipmentTable';
 import { headerObj, STATUS } from './utils/helpers';
 import { IEquipmentRequest } from './interfaces/IEquipmentRequest';
 import { EquipmentReservationForm } from './common/EquipmentReservationForm';
+import { de } from 'date-fns/locale';
 
 export default class ViewNewEquipmentRequest extends React.Component<IViewNewEquipmentRequestProps, IViewNewEquipmentRequestState> {
   private selectedRequest: IEquipmentRequest | null = null;
@@ -46,6 +47,7 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
 
   private handleSearch = async (fromDate: Date, toDate: Date): Promise<void> => {
     const filterColumn = this.state.department.length > 0 ? "BorrowedFrom" : "Department";
+    console.log('handlesearch');  
     await this.getItems(fromDate, toDate, filterColumn);
   }
 
@@ -60,10 +62,11 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
 
   private async getItems(from: Date, to: Date, column: string = 'Department'): Promise<void> {
     let { department } = this.state;
-    
+    console.log(`GetItemdepartment:`,department, `departmentlenght`,department.length);
     if (department.length === 0) {
       const currentUser = await SharePointService.getCurrentUser();
       const { departments, departmentSectorMap } = await SharePointService.getDepartments(currentUser.Title);
+      console.log(`Viewdepartments:`,departments);
       department = departments.map(dept => dept.value);
       this.setState({ department, departmentSectorMap });
     }
@@ -74,7 +77,7 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
     const pastRequestList: IEquipmentRequest[] = [];
     const releaseRequestList: IEquipmentRequest[] = [];
     const returnRequestList: IEquipmentRequest[] = [];
-
+    console.log(`requests:`,requests);
     requests.forEach((item) => {
       if (item.status === STATUS.APPROVED || item.status === STATUS.CLOSED) {
         pastRequestList.push(item);
