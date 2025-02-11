@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { TextField, MenuItem } from '@material-ui/core';
 import { KeyboardDatePicker, DatePicker } from '@material-ui/pickers';
-import { useField } from 'formik';
+import { useField, useFormikContext } from 'formik';
 
 interface ICustomInputProps {
   name: string;
@@ -98,12 +98,19 @@ export const Dropdown: React.FC<IDropdownProps> = ({
   ...props
 }) => {
   const [field, meta] = useField(name);
+  const { setFieldValue } = useFormikContext();
   const hasError = meta.touched && !!meta.error;
+
+  const handleDropdownChange = (e: React.ChangeEvent<any>) => {
+    const value = e.target.value;
+    setFieldValue(name, value);
+    if (handleChange) {
+      handleChange(e);
+    }
+  };
 
   return (
     <TextField
-      {...field}
-      {...props}
       select
       fullWidth
       variant="outlined"
@@ -111,13 +118,13 @@ export const Dropdown: React.FC<IDropdownProps> = ({
       error={hasError}
       helperText={hasError ? meta.error : ''}
       disabled={disabled}
-      onChange={(e) => {
-        field.onChange(e);
-        if (handleChange) {
-          handleChange(e);
-        }
-      }}
+      value={field.value || ''}
+      onChange={handleDropdownChange}
+      {...props}
     >
+      <MenuItem value="">
+        <em>Select...</em>
+      </MenuItem>
       {items.map((item) => (
         <MenuItem key={item.id} value={item.value}>
           {item.value}

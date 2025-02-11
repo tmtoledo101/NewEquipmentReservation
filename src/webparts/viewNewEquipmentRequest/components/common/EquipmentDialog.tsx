@@ -9,6 +9,7 @@ import {
 } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
 import SaveIcon from '@material-ui/icons/Save';
+import { Formik } from 'formik';
 import { Dropdown } from './FormComponents';
 
 interface IEquipmentDialogProps {
@@ -38,71 +39,98 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
   handleEquipment,
   handleQuantity,
 }) => {
+  if (!formik) return null;
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Equipment Details</DialogTitle>
-      <DialogContent>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ marginBottom: '8px' }}>Equipment</div>
-              <Dropdown
-                name="equipment"
-                items={equipmentList}
-                handleChange={handleEquipment}
-              />
-              {equipmentError && (
-                <div style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
-                  {equipmentError}
-                </div>
+      <Formik
+        enableReinitialize
+        initialValues={{
+          equipment: formik.values.equipment || '',
+          quantity: formik.values.quantity || '',
+          assetNumber: formik.values.assetNumber || [],
+          currentRecord: formik.values.currentRecord || -1,
+        }}
+        onSubmit={() => {}}
+      >
+        {(innerFormik) => (
+          <>
+            <DialogContent>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ marginBottom: '8px' }}>Equipment</div>
+                    <Dropdown
+                      name="equipment"
+                      items={equipmentList}
+                      handleChange={(e) => {
+                        innerFormik.setFieldValue('equipment', e.target.value);
+                        if (handleEquipment) {
+                          handleEquipment(e);
+                        }
+                      }}
+                    />
+                    {equipmentError && (
+                      <div style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
+                        {equipmentError}
+                      </div>
+                    )}
+                  </div>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ marginBottom: '8px' }}>Quantity</div>
+                    <Dropdown
+                      name="quantity"
+                      items={quantityList}
+                      handleChange={(e) => {
+                        innerFormik.setFieldValue('quantity', e.target.value);
+                        if (handleQuantity) {
+                          handleQuantity(e);
+                        }
+                      }}
+                    />
+                  </div>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <div>
+                    <div style={{ marginBottom: '8px' }}>Asset Number</div>
+                    <div style={{ fontSize: '14px' }}>
+                      {innerFormik.values.assetNumber.map((asset: string, index: number) => (
+                        <div key={index}>{asset}</div>
+                      ))}
+                    </div>
+                  </div>
+                </Grid>
+              </Grid>
+            </DialogContent>
+
+            <DialogActions>
+              {innerFormik.values.currentRecord > -1 && (
+                <Button
+                  onClick={() => onDelete(innerFormik)}
+                  variant="contained"
+                  style={{ backgroundColor: '#f44336', color: 'white' }}
+                  startIcon={<DeleteIcon />}
+                >
+                  Delete
+                </Button>
               )}
-            </div>
-          </Grid>
-
-          <Grid item xs={12}>
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ marginBottom: '8px' }}>Quantity</div>
-              <Dropdown
-                name="quantity"
-                items={quantityList}
-                handleChange={handleQuantity}
-              />
-            </div>
-          </Grid>
-
-          <Grid item xs={12}>
-            <div>
-              <div style={{ marginBottom: '8px' }}>Asset Number</div>
-              <div style={{ fontSize: '14px' }}>
-                {formik.values.assetNumber.map((asset: string, index: number) => (
-                  <div key={index}>{asset}</div>
-                ))}
-              </div>
-            </div>
-          </Grid>
-        </Grid>
-      </DialogContent>
-
-      <DialogActions>
-        {formik.values.currentRecord > -1 && (
-          <Button
-            onClick={() => onDelete(formik)}
-            variant="contained"
-            style={{ backgroundColor: '#f44336', color: 'white' }}
-            startIcon={<DeleteIcon />}
-          >
-            Delete
-          </Button>
+              <Button
+                onClick={() => onSave(innerFormik)}
+                variant="contained"
+                color="primary"
+                startIcon={<SaveIcon />}
+              >
+                Save
+              </Button>
+            </DialogActions>
+          </>
         )}
-        <Button
-          onClick={() => onSave(formik)}
-          variant="contained"
-          color="primary"
-          startIcon={<SaveIcon />}
-        >
-          Save
-        </Button>
-      </DialogActions>
+      </Formik>
     </Dialog>
   );
 };

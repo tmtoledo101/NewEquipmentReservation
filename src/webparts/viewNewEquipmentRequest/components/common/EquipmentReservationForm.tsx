@@ -154,8 +154,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
 
           // Set initial values
           const formik = formikRef.current;
-          if (formik) {
-            // First set basic values
+          if (formik && selectedRequest) {
             formik.setValues({
               ...formik.values,
               requestedBy: selectedRequest.requestedBy || "",
@@ -189,52 +188,53 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
             }
 
             // Handle building and borrowedFrom relationship
-            console.log('Debug - Selected Request:', {
-              building: selectedRequest.building,
-              borrowedFrom: selectedRequest.borrowedFrom
-            });
-
             if (selectedRequest.building) {
               formik.setFieldValue("building", selectedRequest.building);
               
               // Update borrowedFromList based on selected building
               let borrowedList: any[] = [];
-              console.log('Debug - Borrowed Map:', {
-                building: selectedRequest.building,
-                mapData: borrowedMap[selectedRequest.building]
-              });
 
               if (borrowedMap[selectedRequest.building]) {
-                console.log('Debug - FSS Managed:', isFssManaged);
-                
                 const filteredItems = Array.from(borrowedMap[selectedRequest.building])
                   .filter((item: any) => !isFssManaged ? item.exclusiveTo !== 'FSS' : true);
-                
-                console.log('Debug - After FSS Filter:', filteredItems);
                 
                 borrowedList = filteredItems.map((item: any) => ({
                   id: item.borrowed,
                   value: item.borrowed
                 }));
                 
-                console.log('Debug - Final Borrowed List:', borrowedList);
                 setBorrowedFromList(borrowedList);
 
                 // Set borrowedFrom value after list is updated
                 const hasMatch = borrowedList.some(item => item.value === selectedRequest.borrowedFrom);
-                console.log('Debug - Borrowed From Match:', {
-                  selectedValue: selectedRequest.borrowedFrom,
-                  hasMatch,
-                  borrowedList
-                });
 
                 if (selectedRequest.borrowedFrom && hasMatch) {
                   formik.setFieldValue("borrowedFrom", selectedRequest.borrowedFrom);
+                  
+                  // Set up equipment and quantity lists for existing request
+                  const borrowedItem = borrowedMap[selectedRequest.building].find(
+                    (item: any) => item.borrowed === selectedRequest.borrowedFrom
+                  );
+                  
+                  if (borrowedItem && borrowedItem.equipment) {
+                    // Set equipment list
+                    const equipmentItems = borrowedItem.equipment.map((item: any) => ({
+                      id: item.name,
+                      value: item.name
+                    }));
+                    setEquipmentList(equipmentItems);
+                    
+                    // Set quantity list (1-10 by default)
+                    const quantities = Array.from({ length: 10 }, (_, i) => ({
+                      id: (i + 1).toString(),
+                      value: (i + 1).toString()
+                    }));
+                    setQuantityList(quantities);
+                  }
                 }
               }
             }
           }
-
         } catch (error) {
           console.error('Error initializing form:', error);
           setNotification({
@@ -285,7 +285,8 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
 
   const handleBuilding = React.useCallback((e: any) => {
     const { value } = e.target;
-    const currentBuilding = formikRef.current? formikRef.current.values.building : undefined;
+    const formik = formikRef.current;
+    const currentBuilding = formik && formik.values ? formik.values.building : undefined;
     
     // Only process if building actually changed
     if (value !== currentBuilding) {
@@ -307,10 +308,46 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
       
       // Only clear equipment data if building changed
       setEquipmentData([]);
-      formikRef.current.setFieldValue("building", value);
-      formikRef.current.setFieldValue("borrowedFrom", "");
+      setEquipmentList([]);
+      setQuantityList([]);
+      if (formik && formik.setFieldValue) {
+        formik.setFieldValue("building", value);
+        formik.setFieldValue("borrowedFrom", "");
+      }
     }
-  }, [buildBorrowedMap, isFssManaged, formikRef]);
+  }, [buildBorrowedMap, isFssManaged]);
+
+  const handleBorrowedFrom = React.useCallback((e: any) => {
+    const { value } = e.target;
+    const formik = formikRef.current;
+    const currentBuilding = formik && formik.values ? formik.values.building : undefined;
+    
+    if (currentBuilding && buildBorrowedMap && buildBorrowedMap[currentBuilding]) {
+      const borrowedItem = buildBorrowedMap[currentBuilding].find(
+        (item: any) => item.borrowed === value
+      );
+      
+      if (borrowedItem && borrowedItem.equipment) {
+        // Set equipment list
+        const equipmentItems = borrowedItem.equipment.map((item: any) => ({
+          id: item.name,
+          value: item.name
+        }));
+        setEquipmentList(equipmentItems);
+        
+        // Set quantity list (1-10 by default)
+        const quantities = Array.from({ length: 10 }, (_, i) => ({
+          id: (i + 1).toString(),
+          value: (i + 1).toString()
+        }));
+        setQuantityList(quantities);
+      }
+    }
+    
+    if (formik && formik.setFieldValue) {
+      formik.setFieldValue("borrowedFrom", value);
+    }
+  }, [buildBorrowedMap]);
 
   const handleFileChange = (uploadedFiles: File[]) => {
     setFiles(uploadedFiles);
@@ -348,8 +385,8 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
             onSubmit={handleSubmit}
             innerRef={formikRef}
           >
-            {(formik) => (
-              <form onSubmit={formik.handleSubmit}>
+            {(formikBag) => (
+              <form onSubmit={formikBag.handleSubmit}>
                 <Grid container spacing={4}>
                   <Grid item xs={12}>
                     <h2><b>Equipment Reservation Details</b></h2>
@@ -396,6 +433,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       <Dropdown
                         items={borrowedFromList}
                         name="borrowedFrom"
+                        handleChange={handleBorrowedFrom}
                       />
                     </div>
                   </Grid>
@@ -407,7 +445,8 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                         items={timeList}
                         name="time"
                         handleChange={(e) => {
-                          const currentTime = formikRef.current ? formikRef.current.values.time : undefined;
+                          const formik = formikRef.current;
+                          const currentTime = formik && formik.values ? formik.values.time : undefined;
                           if (e.target.value !== currentTime) {
                             setEquipmentData([]);
                           }
@@ -417,18 +456,17 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                   </Grid>
 
                   <Grid item xs={6}>
-                  <div className={styles.width}>
-                  <div className={styles.label}>Date of use - From</div>
+                    <div className={styles.width}>
+                      <div className={styles.label}>Date of use - From</div>
                       <CustomDateTimePicker
                         name="fromDate"
-               
                       />
                     </div>
                   </Grid>
 
                   <Grid item xs={6}>
-                  <div className={styles.width}>
-                  <div className={styles.label}>Date of use - To</div>
+                    <div className={styles.width}>
+                      <div className={styles.label}>Date of use - To</div>
                       <CustomDateTimePicker
                         name="toDate"
                       />
@@ -438,13 +476,43 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                   <Grid item xs={12}>
                     <EquipmentList
                       equipmentData={equipmentData}
-                      onAdd={() => setShowEquipmentDialog(true)}
+                      onAdd={() => {
+                        const currentFormik = formikRef.current;
+                        const building = currentFormik && currentFormik.values ? currentFormik.values.building : undefined;
+                        const borrowedFrom = currentFormik && currentFormik.values ? currentFormik.values.borrowedFrom : undefined;
+                        
+                        if (!building || !borrowedFrom) {
+                          setNotification({
+                            show: true,
+                            message: "Please select a Building and Borrowed From first",
+                            severity: "error"
+                          });
+                          return;
+                        }
+                        
+                        setShowEquipmentDialog(true);
+                      }}
                       onView={(index) => {
+                        const currentFormik = formikRef.current;
+                        const building = currentFormik && currentFormik.values ? currentFormik.values.building : undefined;
+                        const borrowedFrom = currentFormik && currentFormik.values ? currentFormik.values.borrowedFrom : undefined;
+                        
+                        if (!building || !borrowedFrom) {
+                          setNotification({
+                            show: true,
+                            message: "Please select a Building and Borrowed From first",
+                            severity: "error"
+                          });
+                          return;
+                        }
+
                         const data = equipmentData[index];
-                        formik.setFieldValue("equipment", data.equipment);
-                        formik.setFieldValue("quantity", data.quantity);
-                        formik.setFieldValue("assetNumber", data.assetNumber);
-                        formik.setFieldValue("currentRecord", index);
+                        if (currentFormik && currentFormik.setFieldValue) {
+                          currentFormik.setFieldValue("equipment", data.equipment);
+                          currentFormik.setFieldValue("quantity", data.quantity);
+                          currentFormik.setFieldValue("assetNumber", data.assetNumber);
+                          currentFormik.setFieldValue("currentRecord", index);
+                        }
                         setShowEquipmentDialog(true);
                       }}
                     />
@@ -520,6 +588,72 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
           {notification.message}
         </Alert>
       </Snackbar>
+
+      {formikRef.current && showEquipmentDialog && (
+        <EquipmentDialog
+          open={showEquipmentDialog}
+          onClose={() => setShowEquipmentDialog(false)}
+          onSave={(formik) => {
+            if (!formik || !formik.values) return;
+            
+            const newData = {
+              equipment: formik.values.equipment,
+              quantity: formik.values.quantity,
+              assetNumber: formik.values.assetNumber,
+            };
+
+            const updatedEquipmentData = [...equipmentData];
+            if (formik.values.currentRecord > -1) {
+              updatedEquipmentData[formik.values.currentRecord] = newData;
+            } else {
+              updatedEquipmentData.push(newData);
+            }
+
+            setEquipmentData(updatedEquipmentData);
+            setShowEquipmentDialog(false);
+            
+            if (formik.setFieldValue) {
+              formik.setFieldValue("equipment", "");
+              formik.setFieldValue("quantity", "");
+              formik.setFieldValue("assetNumber", []);
+              formik.setFieldValue("currentRecord", -1);
+            }
+          }}
+          onDelete={(formik) => {
+            if (!formik || !formik.values) return;
+            
+            const updatedEquipmentData = equipmentData.filter(
+              (_, index) => index !== formik.values.currentRecord
+            );
+            setEquipmentData(updatedEquipmentData);
+            setShowEquipmentDialog(false);
+            
+            if (formik.setFieldValue) {
+              formik.setFieldValue("equipment", "");
+              formik.setFieldValue("quantity", "");
+              formik.setFieldValue("assetNumber", []);
+              formik.setFieldValue("currentRecord", -1);
+            }
+          }}
+          formik={formikRef.current}
+          equipmentList={equipmentList}
+          quantityList={quantityList}
+          assetList={[]}
+          equipmentError=""
+          handleEquipment={(e) => {
+            const formik = formikRef.current;
+            if (formik && formik.setFieldValue) {
+              formik.setFieldValue("equipment", e.target.value);
+            }
+          }}
+          handleQuantity={(e) => {
+            const formik = formikRef.current;
+            if (formik && formik.setFieldValue) {
+              formik.setFieldValue("quantity", e.target.value);
+            }
+          }}
+        />
+      )}
     </MuiPickersUtilsProvider>
   );
 };
