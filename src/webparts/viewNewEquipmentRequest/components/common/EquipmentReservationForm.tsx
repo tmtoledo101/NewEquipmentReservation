@@ -21,6 +21,8 @@ import { ModalPopup } from './ModalPopup';
 import { SharePointService } from '../services/SharePointService';
 import { IEquipmentRequest } from '../interfaces/IEquipmentRequest';
 import * as Yup from 'yup';
+import styles from '../ViewNewEquipmentRequest.module.scss';
+
 
 const equipmentReservationSchema = Yup.object().shape({
   requestedBy: Yup.string().required('Required'),
@@ -384,8 +386,8 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                   </Grid>
 
                   <Grid item xs={6}>
-                    <div style={formStyles.formField}>
-                      <div style={formStyles.label}>Date of use - From</div>
+                  <div className={styles.width}>
+                  <div className={styles.label}>Date of use - From</div>
                       <CustomDateTimePicker
                         name="fromDate"
                
@@ -394,8 +396,8 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                   </Grid>
 
                   <Grid item xs={6}>
-                    <div style={formStyles.formField}>
-                      <div style={formStyles.label}>Date of use - To</div>
+                  <div className={styles.width}>
+                  <div className={styles.label}>Date of use - To</div>
                       <CustomDateTimePicker
                         name="toDate"
                       />

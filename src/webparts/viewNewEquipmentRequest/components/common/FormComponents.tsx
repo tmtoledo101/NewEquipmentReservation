@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { TextField, MenuItem } from '@material-ui/core';
-import { KeyboardDatePicker } from '@material-ui/pickers';
+import { KeyboardDatePicker, DatePicker } from '@material-ui/pickers';
 import { useField } from 'formik';
 
 interface ICustomInputProps {
@@ -63,11 +63,11 @@ export const CustomDateTimePicker: React.FC<ICustomDateTimePickerProps> = ({
   const hasError = meta.touched && !!meta.error;
 
   return (
-    <KeyboardDatePicker
+    <DatePicker
       {...field}
       label={label}
       variant="inline"
-      inputVariant="outlined"
+      inputVariant="standard"
       fullWidth
       format="MM/dd/yyyy"
       error={hasError}
@@ -79,8 +79,8 @@ export const CustomDateTimePicker: React.FC<ICustomDateTimePickerProps> = ({
         }
       }}
       disabled={disabled}
-      KeyboardButtonProps={{
-        'aria-label': 'change date',
+      InputProps={{
+        readOnly: true
       }}
       invalidDateMessage="Invalid date format"
       maxDateMessage="Date exceeds allowable range"
