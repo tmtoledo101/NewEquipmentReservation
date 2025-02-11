@@ -12,6 +12,7 @@ import {
 } from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
 import VisibilityIcon from '@material-ui/icons/Visibility';
+import { Fab } from "@material-ui/core";
 
 interface IEquipmentData {
   equipment: string;
@@ -32,38 +33,30 @@ export const EquipmentList: React.FC<IEquipmentListProps> = ({
 }) => {
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h3 style={{ margin: 0 }}>Equipment List</h3>
-        <Button
-          variant="contained"
+        <div>
+        <Fab
           color="primary"
-          startIcon={<AddIcon />}
+          aria-label="add"
+          size="small"
           onClick={onAdd}
         >
-          Add Equipment
-        </Button>
-      </div>
-
+          <AddIcon />
+        </Fab>
+        </div>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell>Action</TableCell>
               <TableCell>Equipment</TableCell>
               <TableCell>Quantity</TableCell>
               <TableCell>Asset Number</TableCell>
-              <TableCell>Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {equipmentData.map((row, index) => (
               <TableRow key={index}>
-                <TableCell>{row.equipment}</TableCell>
-                <TableCell>{row.quantity}</TableCell>
-                <TableCell>
-                  {row.assetNumber.map((asset, i) => (
-                    <div key={i}>{asset}</div>
-                  ))}
-                </TableCell>
                 <TableCell>
                   <IconButton
                     color="primary"
@@ -72,6 +65,13 @@ export const EquipmentList: React.FC<IEquipmentListProps> = ({
                   >
                     <VisibilityIcon />
                   </IconButton>
+                </TableCell>
+                <TableCell>{row.equipment}</TableCell>
+                <TableCell>{row.quantity}</TableCell>
+                <TableCell>
+                  {row.assetNumber.map((asset, i) => (
+                    <div key={i}>{asset}</div>
+                  ))}
                 </TableCell>
               </TableRow>
             ))}

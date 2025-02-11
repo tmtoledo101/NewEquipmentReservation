@@ -167,6 +167,27 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
               remarks: selectedRequest.remarks || "",
             });
 
+            // Parse and set equipment data
+            if (selectedRequest.equipment) {
+              try {
+                const parsedEquipment = JSON.parse(selectedRequest.equipment);
+                if (Array.isArray(parsedEquipment)) {
+                  setEquipmentData(parsedEquipment.map(item => ({
+                    equipment: item.equipment || '',
+                    quantity: item.quantity || '',
+                    assetNumber: Array.isArray(item.assetNumber) ? item.assetNumber : []
+                  })));
+                }
+              } catch (error) {
+                console.error('Error parsing equipment data:', error);
+                setNotification({
+                  show: true,
+                  message: "Failed to load equipment data",
+                  severity: "error"
+                });
+              }
+            }
+
             // Handle building and borrowedFrom relationship
             console.log('Debug - Selected Request:', {
               building: selectedRequest.building,
@@ -264,26 +285,31 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
 
   const handleBuilding = React.useCallback((e: any) => {
     const { value } = e.target;
+    const currentBuilding = formikRef.current? formikRef.current.values.building : undefined;
     
-    if (buildBorrowedMap && buildBorrowedMap[value]) {
-      const filteredItems = Array.from(buildBorrowedMap[value])
-        .filter((item: any) => !isFssManaged ? item.exclusiveTo !== 'FSS' : true)
-        .map((item: any) => item.borrowed);
+    // Only process if building actually changed
+    if (value !== currentBuilding) {
+      if (buildBorrowedMap && buildBorrowedMap[value]) {
+        const filteredItems = Array.from(buildBorrowedMap[value])
+          .filter((item: any) => !isFssManaged ? item.exclusiveTo !== 'FSS' : true)
+          .map((item: any) => item.borrowed);
+        
+        const uniqueBorrowed = [...new Set(filteredItems)];
+        const borrowedList = uniqueBorrowed.map(item => ({
+          id: item,
+          value: item
+        }));
+        
+        setBorrowedFromList(borrowedList);
+      } else {
+        setBorrowedFromList([]);
+      }
       
-      const uniqueBorrowed = [...new Set(filteredItems)];
-      const borrowedList = uniqueBorrowed.map(item => ({
-        id: item,
-        value: item
-      }));
-      
-      setBorrowedFromList(borrowedList);
-    } else {
-      setBorrowedFromList([]);
+      // Only clear equipment data if building changed
+      setEquipmentData([]);
+      formikRef.current.setFieldValue("building", value);
+      formikRef.current.setFieldValue("borrowedFrom", "");
     }
-    
-    setEquipmentData([]);
-    formikRef.current.setFieldValue("building", value);
-    formikRef.current.setFieldValue("borrowedFrom", "");
   }, [buildBorrowedMap, isFssManaged, formikRef]);
 
   const handleFileChange = (uploadedFiles: File[]) => {
@@ -380,7 +406,12 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       <Dropdown
                         items={timeList}
                         name="time"
-                        handleChange={() => setEquipmentData([])}
+                        handleChange={(e) => {
+                          const currentTime = formikRef.current ? formikRef.current.values.time : undefined;
+                          if (e.target.value !== currentTime) {
+                            setEquipmentData([]);
+                          }
+                        }}
                       />
                     </div>
                   </Grid>
