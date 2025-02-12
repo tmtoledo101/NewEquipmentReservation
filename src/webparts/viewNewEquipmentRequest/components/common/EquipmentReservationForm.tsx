@@ -23,7 +23,6 @@ import { IEquipmentRequest } from '../interfaces/IEquipmentRequest';
 import * as Yup from 'yup';
 import styles from '../ViewNewEquipmentRequest.module.scss';
 
-
 const equipmentReservationSchema = Yup.object().shape({
   requestedBy: Yup.string().required('Required'),
   department: Yup.string().required('Required'),
@@ -112,6 +111,18 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
   const [quantityList, setQuantityList] = React.useState<IDropdownItem[]>([]);
   const [equipmentData, setEquipmentData] = React.useState<IEquipmentData[]>([]);
   const [buildBorrowedMap, setBuildBorrowedMap] = React.useState<any>({});
+  const [buildEquipmentMap, setBuildEquipmentMap] = React.useState<{
+    [key: string]: {
+      [id: number]: {
+        equipment: string;
+        borrowed: string;
+        assetNumber: string;
+        blockedDateAM: Date | null;
+        blockedDatePM: Date | null;
+        blockedDateWholeDay: Date | null;
+      }
+    }
+  }>({}); 
   const [isFssManaged, setIsFssManaged] = React.useState<boolean>(false);
   const [files, setFiles] = React.useState<File[]>([]);
   const [notification, setNotification] = React.useState<{
@@ -148,6 +159,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
           
           setBuildingList(buildings);
           setBuildBorrowedMap(borrowedMap);
+          setBuildEquipmentMap(buildEquipmentMap);
 
           const times = await SharePointService.getTime();
           setTimeList(times);
@@ -187,11 +199,9 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
               }
             }
 
-            // Handle building and borrowedFrom relationship
             if (selectedRequest.building) {
               formik.setFieldValue("building", selectedRequest.building);
               
-              // Update borrowedFromList based on selected building
               let borrowedList: any[] = [];
 
               if (borrowedMap[selectedRequest.building]) {
@@ -205,24 +215,29 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                 
                 setBorrowedFromList(borrowedList);
 
-                // Set borrowedFrom value after list is updated
                 const hasMatch = borrowedList.some(item => item.value === selectedRequest.borrowedFrom);
-
                 if (selectedRequest.borrowedFrom && hasMatch) {
                   formik.setFieldValue("borrowedFrom", selectedRequest.borrowedFrom);
                   
-                  // Set up equipment and quantity lists for existing request
-                  const borrowedItem = borrowedMap[selectedRequest.building].find(
-                    (item: any) => item.borrowed === selectedRequest.borrowedFrom
-                  );
+                  // Get available equipment options from buildEquipmentMap
+                  const key = `${selectedRequest.building}-${selectedRequest.borrowedFrom}`;
+                  const availableEquipment = buildEquipmentMap[key];
                   
-                  if (borrowedItem && borrowedItem.equipment) {
-                    // Set equipment list
-                    const equipmentItems = borrowedItem.equipment.map((item: any) => ({
-                      id: item.name,
-                      value: item.name
+                  if (availableEquipment) {
+                    // Extract unique equipment names
+                    const uniqueEquipment = [...new Set(
+                      Object.values(availableEquipment)
+                        .filter(item => item.equipment)
+                        .map(item => item.equipment)
+                    )];
+                    
+                    // Create equipment items for dropdown
+                    const equipmentItems = uniqueEquipment.map(item => ({
+                      id: item,
+                      value: item
                     }));
                     setEquipmentList(equipmentItems);
+                    console.log('Debug - Equipment Items:', equipmentItems);
                     
                     // Set quantity list (1-10 by default)
                     const quantities = Array.from({ length: 10 }, (_, i) => ({
@@ -230,6 +245,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       value: (i + 1).toString()
                     }));
                     setQuantityList(quantities);
+                    console.log('Debug - Quantities:', quantities);
                   }
                 }
               }
@@ -288,7 +304,6 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
     const formik = formikRef.current;
     const currentBuilding = formik && formik.values ? formik.values.building : undefined;
     
-    // Only process if building actually changed
     if (value !== currentBuilding) {
       if (buildBorrowedMap && buildBorrowedMap[value]) {
         const filteredItems = Array.from(buildBorrowedMap[value])
@@ -306,7 +321,6 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
         setBorrowedFromList([]);
       }
       
-      // Only clear equipment data if building changed
       setEquipmentData([]);
       setEquipmentList([]);
       setQuantityList([]);
@@ -323,17 +337,25 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
     const currentBuilding = formik && formik.values ? formik.values.building : undefined;
     
     if (currentBuilding && buildBorrowedMap && buildBorrowedMap[currentBuilding]) {
-      const borrowedItem = buildBorrowedMap[currentBuilding].find(
-        (item: any) => item.borrowed === value
-      );
+      // Get available equipment options from buildEquipmentMap
+      const key = `${currentBuilding}-${value}`;
+      const availableEquipment = buildEquipmentMap[key];
       
-      if (borrowedItem && borrowedItem.equipment) {
-        // Set equipment list
-        const equipmentItems = borrowedItem.equipment.map((item: any) => ({
-          id: item.name,
-          value: item.name
+      if (availableEquipment) {
+        // Extract unique equipment names
+        const uniqueEquipment = [...new Set(
+          Object.values(availableEquipment)
+            .filter(item => item.equipment)
+            .map(item => item.equipment)
+        )];
+        
+        // Create equipment items for dropdown
+        const equipmentItems = uniqueEquipment.map(item => ({
+          id: item,
+          value: item
         }));
         setEquipmentList(equipmentItems);
+        console.log('Debug - Equipment Items:', equipmentItems);
         
         // Set quantity list (1-10 by default)
         const quantities = Array.from({ length: 10 }, (_, i) => ({
@@ -341,13 +363,18 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
           value: (i + 1).toString()
         }));
         setQuantityList(quantities);
+        console.log('Debug - Quantities:', quantities);
       }
     }
     
     if (formik && formik.setFieldValue) {
       formik.setFieldValue("borrowedFrom", value);
+      // Reset equipment-related values
+      formik.setFieldValue("equipment", "");
+      formik.setFieldValue("quantity", "");
+      formik.setFieldValue("assetNumber", []);
     }
-  }, [buildBorrowedMap]);
+  }, [buildBorrowedMap, buildEquipmentMap]);
 
   const handleFileChange = (uploadedFiles: File[]) => {
     setFiles(uploadedFiles);
@@ -506,14 +533,59 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                           return;
                         }
 
-                        const data = equipmentData[index];
-                        if (currentFormik && currentFormik.setFieldValue) {
-                          currentFormik.setFieldValue("equipment", data.equipment);
-                          currentFormik.setFieldValue("quantity", data.quantity);
-                          currentFormik.setFieldValue("assetNumber", data.assetNumber);
-                          currentFormik.setFieldValue("currentRecord", index);
+                        // Get available equipment options from buildEquipmentMap
+                        const key = `${building}-${borrowedFrom}`;
+                        const availableEquipment = buildEquipmentMap[key];
+                        
+                        if (availableEquipment) {
+                          // Extract unique equipment names
+                          const uniqueEquipment = [...new Set(
+                            Object.values(availableEquipment)
+                              .filter(item => item.equipment)
+                              .map(item => item.equipment)
+                          )];
+                          
+                          // Create equipment items for dropdown
+                          const equipmentItems = uniqueEquipment.map(item => ({
+                            id: item,
+                            value: item
+                          }));
+                          setEquipmentList(equipmentItems);
+                          console.log('Debug - Equipment Items:', equipmentItems);
+                          
+                          // Set quantity list (1-10 by default)
+                          const quantities = Array.from({ length: 10 }, (_, i) => ({
+                            id: (i + 1).toString(),
+                            value: (i + 1).toString()
+                          }));
+                          setQuantityList(quantities);
+                          console.log('Debug - Quantities:', quantities);
+                          
+                          // Get the existing equipment data from our equipmentData array
+                          const existingEquipmentData = equipmentData[index];
+                          if (!existingEquipmentData) {
+                            setNotification({
+                              show: true,
+                              message: "Failed to load equipment data",
+                              severity: "error"
+                            });
+                            return;
+                          }
+
+                          if (currentFormik && currentFormik.setFieldValue) {
+                            currentFormik.setFieldValue("equipment", existingEquipmentData.equipment);
+                            currentFormik.setFieldValue("quantity", existingEquipmentData.quantity);
+                            currentFormik.setFieldValue("assetNumber", existingEquipmentData.assetNumber);
+                            currentFormik.setFieldValue("currentRecord", index);
+                          }
+                          setShowEquipmentDialog(true);
+                        } else {
+                          setNotification({
+                            show: true,
+                            message: "Failed to load equipment options",
+                            severity: "error"
+                          });
                         }
-                        setShowEquipmentDialog(true);
                       }}
                     />
                   </Grid>
@@ -642,14 +714,25 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
           equipmentError=""
           handleEquipment={(e) => {
             const formik = formikRef.current;
+            const value = e.target.value;
             if (formik && formik.setFieldValue) {
-              formik.setFieldValue("equipment", e.target.value);
+              formik.setFieldValue("equipment", value);
+              // Find the equipment in the list to get any additional data if needed
+              const selectedEquipment = equipmentList.find(item => item.id === value);
+              if (selectedEquipment) {
+                console.log('Selected equipment:', selectedEquipment);
+                // Reset quantity when equipment changes
+                formik.setFieldValue("quantity", "");
+                formik.setFieldValue("assetNumber", []);
+              }
             }
           }}
           handleQuantity={(e) => {
             const formik = formikRef.current;
+            const value = e.target.value;
             if (formik && formik.setFieldValue) {
-              formik.setFieldValue("quantity", e.target.value);
+              formik.setFieldValue("quantity", value);
+              console.log('Selected quantity:', value);
             }
           }}
         />

@@ -71,7 +71,8 @@ export class SharePointService {
 
           const borrowedItem = {
             borrowed: borrowedDepartment,
-            exclusiveTo: item.ExclusiveTo || ''
+            exclusiveTo: item.ExclusiveTo || '',
+            //equipment: item.Equiupment || '',
           };
 
           // Ensure no duplicates using proper type checking
@@ -89,7 +90,7 @@ export class SharePointService {
 
           // Set all required properties with proper type handling
           buildEquipmentMap[key][item.ID] = {
-            equipment: item.Equipment || '',
+            equipment: item.Equiupment || '',
             borrowed: borrowedDepartment,
             assetNumber: item.AssetNumber || '',
             blockedDateAM: item.BlockedDateAM ? new Date(item.BlockedDateAM) : null,

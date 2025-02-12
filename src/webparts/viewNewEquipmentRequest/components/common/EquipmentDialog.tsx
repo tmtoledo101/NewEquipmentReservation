@@ -54,7 +54,7 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
         }}
         onSubmit={() => {}}
       >
-        {(innerFormik) => (
+        {({ values, setFieldValue }) => (
           <>
             <DialogContent>
               <Grid container spacing={2}>
@@ -64,12 +64,7 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
                     <Dropdown
                       name="equipment"
                       items={equipmentList}
-                      handleChange={(e) => {
-                        innerFormik.setFieldValue('equipment', e.target.value);
-                        if (handleEquipment) {
-                          handleEquipment(e);
-                        }
-                      }}
+                      handleChange={handleEquipment}
                     />
                     {equipmentError && (
                       <div style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
@@ -85,12 +80,7 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
                     <Dropdown
                       name="quantity"
                       items={quantityList}
-                      handleChange={(e) => {
-                        innerFormik.setFieldValue('quantity', e.target.value);
-                        if (handleQuantity) {
-                          handleQuantity(e);
-                        }
-                      }}
+                      handleChange={handleQuantity}
                     />
                   </div>
                 </Grid>
@@ -99,7 +89,7 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
                   <div>
                     <div style={{ marginBottom: '8px' }}>Asset Number</div>
                     <div style={{ fontSize: '14px' }}>
-                      {innerFormik.values.assetNumber.map((asset: string, index: number) => (
+                      {values.assetNumber.map((asset: string, index: number) => (
                         <div key={index}>{asset}</div>
                       ))}
                     </div>
@@ -109,9 +99,9 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
             </DialogContent>
 
             <DialogActions>
-              {innerFormik.values.currentRecord > -1 && (
+              {values.currentRecord > -1 && (
                 <Button
-                  onClick={() => onDelete(innerFormik)}
+                  onClick={() => onDelete({ values, setFieldValue })}
                   variant="contained"
                   style={{ backgroundColor: '#f44336', color: 'white' }}
                   startIcon={<DeleteIcon />}
@@ -120,7 +110,7 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
                 </Button>
               )}
               <Button
-                onClick={() => onSave(innerFormik)}
+                onClick={() => onSave({ values, setFieldValue })}
                 variant="contained"
                 color="primary"
                 startIcon={<SaveIcon />}
