@@ -86,11 +86,11 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
                 </Grid>
 
                 <Grid item xs={12}>
-                  <div>
+                  <div style={{ marginBottom: '16px' }}>
                     <div style={{ marginBottom: '8px' }}>Asset Number</div>
-                    <div style={{ fontSize: '14px' }}>
+                    <div style={{ border: '1px solid #ccc', padding: '8px', borderRadius: '4px', minHeight: '56px' }}>
                       {values.assetNumber.map((asset: string, index: number) => (
-                        <div key={index}>{asset}</div>
+                        <div key={index} style={{ margin: '4px 0' }}>{asset}</div>
                       ))}
                     </div>
                   </div>

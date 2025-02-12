@@ -15,9 +15,9 @@ export interface IEquipmentMapItem {
   equipment: string;
   borrowed: string;
   assetNumber: string;
-  blockedDateAM: Date | null;
-  blockedDatePM: Date | null;
-  blockedDateWholeDay: Date | null;
+  blockedDateAM: string | null;
+  blockedDatePM: string | null;
+  blockedDateWholeDay: string | null;
 }
 
 export class SharePointService {
@@ -93,9 +93,9 @@ export class SharePointService {
             equipment: item.Equiupment || '',
             borrowed: borrowedDepartment,
             assetNumber: item.AssetNumber || '',
-            blockedDateAM: item.BlockedDateAM ? new Date(item.BlockedDateAM) : null,
-            blockedDatePM: item.BlockedDatePM ? new Date(item.BlockedDatePM) : null,
-            blockedDateWholeDay: item.BlockedDateWholeDay ? new Date(item.BlockedDateWholeDay) : null
+            blockedDateAM: item.BlockedDateAM || '',
+            blockedDatePM: item.BlockedDatePM || '',
+            blockedDateWholeDay: item.BlockedDateWholeDay || ''
           };
         }
       });
@@ -208,6 +208,66 @@ export class SharePointService {
       ownerEmails: [...new Set(ownerEmails)],
       departmentsByOwner
     };
+  }
+
+  private static safeParseBlockedDates(value: any): string[] {
+    if (!value) return [];
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.warn('Error parsing blocked dates:', error);
+      return [];
+    }
+  }
+
+  private static isFirstNotIncluded(firstArray: string[], secondArray: string[]): boolean {
+    const data = firstArray.filter(item => secondArray.includes(item));
+    return data.length === 0;
+  }
+
+  public static getAvailableEquipment(
+    equipment: any[],
+    fromDate: Date,
+    toDate: Date,
+    timeslot: string
+  ) {
+    const from = moment(moment(fromDate).format("YYYY/MM/DD"));
+    const to = moment(moment(toDate).format("YYYY/MM/DD"));
+    const days = to.diff(from, 'days', true);
+    const requestedDateArray = [];
+    
+    for (let i = 0; i <= days; i++) {
+      requestedDateArray.push(moment(from).add(i, 'days').format("YYYY/MM/DD"));
+    }
+
+    return equipment.filter(item => {
+      const key = `BlockedDate${timeslot}`;
+      const blockedDates = this.safeParseBlockedDates(item[key]);
+
+      if (timeslot === 'WholeDay') {
+        const amBlockedDates = this.safeParseBlockedDates(item['BlockedDateAM']);
+        const pmBlockedDates = this.safeParseBlockedDates(item['BlockedDatePM']);
+        
+        // if it is already blocked for AM or PM then we cannot block for whole day
+        if (!this.isFirstNotIncluded(requestedDateArray, amBlockedDates) || 
+            !this.isFirstNotIncluded(requestedDateArray, pmBlockedDates)) {
+          return false;
+        }
+      }
+
+      if (timeslot === 'AM' || timeslot === 'PM') {
+        const wholedaysBlockedDates = this.safeParseBlockedDates(item['BlockedDateWholeDay']);
+        if (!this.isFirstNotIncluded(requestedDateArray, wholedaysBlockedDates)) {
+          return false;
+        }
+      }
+
+      // if blockdates is empty or requested dates are not present in blockdates,
+      // it means equipment is available
+      return blockedDates.length === 0 || 
+             this.isFirstNotIncluded(requestedDateArray, blockedDates);
+    });
   }
 
   public static async getEquipmentRequests(from: Date, to: Date, departments: string[], filterColumn: string = 'Department'): Promise<IEquipmentRequest[]> {

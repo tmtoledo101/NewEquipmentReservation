@@ -33,6 +33,7 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
   handleEquipment,
   handleQuantity
 }) => {
+
   return (
     <ModalPopup
       title="Add Equipment"
