@@ -114,6 +114,9 @@ export default class NewEquimentReservation extends React.Component<INewEquiment
 
     let equipmentList = this.state.equipmentList;
 
+    // Set currentRecord first
+    this.inputRef.current.setFieldValue("currentRecord", index);
+
     if (index >= 0) {
       const data = this.state.equipmentData[index];
       const quantity = this.equipmentListMap[data.equipment].length;
@@ -129,13 +132,11 @@ export default class NewEquimentReservation extends React.Component<INewEquiment
       this.inputRef.current.setFieldValue("equipment", data.equipment);
       this.inputRef.current.setFieldValue("quantity", data.quantity);
       this.inputRef.current.setFieldValue("assetNumber", data.assetNumber);
-      this.inputRef.current.setFieldValue("currentRecord", index);
     } else {
       const selectedEquipment = this.state.equipmentData.map(item => item.equipment);
       equipmentList = equipmentList.filter(item => !selectedEquipment.includes(item.value));
 
       this.setState({ equipmentList });
-      this.inputRef.current.setFieldValue("currentRecord", -1);
     }
   }
 

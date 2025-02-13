@@ -185,6 +185,7 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
               await this.getItems(new Date(), new Date(), filterColumn);
             }}
             siteUrl={this.props.siteUrl}
+            tabValue={tabValue}
           />
         )}
       </>

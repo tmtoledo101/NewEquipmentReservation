@@ -42,16 +42,29 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
   if (!formik) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={() => {
+        if (formik && formik.setFieldValue) {
+          formik.setFieldValue("equipment", "");
+          formik.setFieldValue("quantity", "");
+          formik.setFieldValue("assetNumber", []);
+          formik.setFieldValue("currentRecord", -1);
+        }
+        onClose();
+      }} 
+      maxWidth="sm" 
+      fullWidth
+    >
       <DialogTitle>Equipment Details</DialogTitle>
       <Formik
         enableReinitialize
-        initialValues={{
-          equipment: formik.values.equipment || '',
-          quantity: formik.values.quantity || '',
-          assetNumber: formik.values.assetNumber || [],
-          currentRecord: formik.values.currentRecord || -1,
-        }}
+  initialValues={{
+    equipment: formik.values.equipment || '',
+    quantity: formik.values.quantity || '',
+    assetNumber: formik.values.assetNumber || [],
+    currentRecord: typeof formik.values.currentRecord === 'number' ? formik.values.currentRecord : -1,
+  }}
         onSubmit={() => {}}
       >
         {({ values, setFieldValue }) => (
@@ -99,9 +112,9 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
             </DialogContent>
 
             <DialogActions>
-              {values.currentRecord > -1 && (
+              {formik.values.currentRecord > -1 && (
                 <Button
-                  onClick={() => onDelete({ values, setFieldValue })}
+                  onClick={() => onDelete(formik)}
                   variant="contained"
                   style={{ backgroundColor: '#f44336', color: 'white' }}
                   startIcon={<DeleteIcon />}

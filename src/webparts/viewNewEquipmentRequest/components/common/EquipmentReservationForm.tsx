@@ -30,6 +30,7 @@ const equipmentReservationSchema = Yup.object().shape({
   building: Yup.string().required('Required'),
   borrowedFrom: Yup.string().required('Required'),
   time: Yup.string().required('Required'),
+  status: Yup.string().required('Required'),
   fromDate: Yup.date().required('Required').nullable(),
   toDate: Yup.date()
     .required('Required')
@@ -80,6 +81,7 @@ interface IEquipmentReservationFormProps {
   onClose: () => void;
   onUpdateSuccess: () => void;
   siteUrl: string;
+  tabValue: number;
 }
 
 export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> = ({
@@ -87,10 +89,13 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
   selectedRequest,
   onClose,
   onUpdateSuccess,
-  siteUrl
+  siteUrl,
+  tabValue
 }) => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showEquipmentDialog, setShowEquipmentDialog] = React.useState(false);
+  const [showConfirmation, setShowConfirmation] = React.useState(false);
+  const [pendingValues, setPendingValues] = React.useState<any>(null);
   interface IDropdownItem {
     id: string;
     value: string;
@@ -178,6 +183,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
               fromDate: selectedRequest.fromDate ? new Date(selectedRequest.fromDate) : null,
               toDate: selectedRequest.toDate ? new Date(selectedRequest.toDate) : null,
               remarks: selectedRequest.remarks || "",
+              status: selectedRequest.status || "",
             });
 
             // Parse and set equipment data
@@ -261,13 +267,21 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
   }, [isOpen, selectedRequest]);
 
   const handleSubmit = async (values: any): Promise<void> => {
+    // Store values and show confirmation dialog
+    setPendingValues(values);
+    setShowConfirmation(true);
+  };
+
+  const handleConfirm = async (): Promise<void> => {
     try {
+      if (!pendingValues || !selectedRequest) return;
+      
       setIsSubmitting(true);
-      if (!selectedRequest) return;
+      setShowConfirmation(false);
       
       await SharePointService.updateRequest(
         selectedRequest.ID || 0,
-        values,
+        pendingValues,
         equipmentData,
         files
       );
@@ -291,6 +305,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
       });
     } finally {
       setIsSubmitting(false);
+      setPendingValues(null);
     }
   };
 
@@ -393,6 +408,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
               contactNumber: "",
               borrowedFrom: "",
               time: "",
+              status: "",
               currentRecord: -1,
               assetNumber: [],
             }}
@@ -493,8 +509,10 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       equipmentData={equipmentData}
                       onAdd={() => {
                         const currentFormik = formikRef.current;
-                        const building = currentFormik && currentFormik.values ? currentFormik.values.building : undefined;
-                        const borrowedFrom = currentFormik && currentFormik.values ? currentFormik.values.borrowedFrom : undefined;
+                        if (!currentFormik) return;
+
+                        const building = currentFormik.values.building;
+                        const borrowedFrom = currentFormik.values.borrowedFrom;
                         
                         if (!building || !borrowedFrom) {
                           setNotification({
@@ -504,13 +522,35 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                           });
                           return;
                         }
+
+                        // Explicitly set currentRecord to -1 for new equipment
+                        currentFormik.setFieldValue("currentRecord", -1);
+                        currentFormik.setFieldValue("equipment", "");
+                        currentFormik.setFieldValue("quantity", "");
+                        currentFormik.setFieldValue("assetNumber", []);
                         
                         setShowEquipmentDialog(true);
                       }}
                       onView={(index) => {
                         const currentFormik = formikRef.current;
-                        const building = currentFormik && currentFormik.values ? currentFormik.values.building : undefined;
-                        const borrowedFrom = currentFormik && currentFormik.values ? currentFormik.values.borrowedFrom : undefined;
+                        if (!currentFormik) return;
+
+                        // Get the existing equipment data first
+                        const existingEquipmentData = equipmentData[index];
+                        if (!existingEquipmentData) {
+                          setNotification({
+                            show: true,
+                            message: "Failed to load equipment data",
+                            severity: "error"
+                          });
+                          return;
+                        }
+
+                        // Set the currentRecord first to ensure it's available
+                        currentFormik.setFieldValue("currentRecord", index);
+                        
+                        const building = currentFormik.values.building;
+                        const borrowedFrom = currentFormik.values.borrowedFrom;
                         
                         if (!building || !borrowedFrom) {
                           setNotification({
@@ -539,25 +579,13 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                             value: item
                           }));
                           setEquipmentList(equipmentItems);
-                          console.log('Debug - Equipment Items:', equipmentItems);
                           
-                          // Get the existing equipment data from our equipmentData array
-                          const existingEquipmentData = equipmentData[index];
-                          if (!existingEquipmentData) {
-                            setNotification({
-                              show: true,
-                              message: "Failed to load equipment data",
-                              severity: "error"
-                            });
-                            return;
-                          }
-
-                          if (currentFormik && currentFormik.setFieldValue) {
-                            currentFormik.setFieldValue("equipment", existingEquipmentData.equipment);
-                            currentFormik.setFieldValue("quantity", existingEquipmentData.quantity);
-                            currentFormik.setFieldValue("assetNumber", existingEquipmentData.assetNumber);
-                            currentFormik.setFieldValue("currentRecord", index);
-                          }
+                          // Set the equipment values
+                          currentFormik.setFieldValue("equipment", existingEquipmentData.equipment);
+                          currentFormik.setFieldValue("quantity", existingEquipmentData.quantity);
+                          currentFormik.setFieldValue("assetNumber", existingEquipmentData.assetNumber);
+                          
+                          // Show the dialog
                           setShowEquipmentDialog(true);
                         } else {
                           setNotification({
@@ -574,6 +602,22 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                     <div style={formStyles.formField}>
                       <div style={formStyles.label}>Remarks</div>
                       <CustomInput name="remarks" />
+                    </div>
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <div style={formStyles.formField}>
+                      <div style={formStyles.label}>Status</div>
+                      <Dropdown
+                        items={tabValue === 3 ? 
+                          [{ id: 'Returned', value: 'Returned' }] :
+                          [
+                            { id: 'Released', value: 'Released' },
+                            { id: 'Cancelled', value: 'Cancelled' }
+                          ]
+                        }
+                        name="status"
+                      />
                     </div>
                   </Grid>
 
@@ -776,6 +820,49 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
           }}
         />
       )}
+      {/* Confirmation Dialog */}
+      <ModalPopup
+        open={showConfirmation}
+        onClose={() => {
+          setShowConfirmation(false);
+          setPendingValues(null);
+        }}
+        title="Confirm Action"
+        maxWidth="sm"
+      >
+        <DialogContent>
+          {pendingValues && pendingValues.status === 'Released' ? (
+            <p>Are you sure you want to release this request?</p>
+          ) : (pendingValues && pendingValues.status === 'Cancelled') ? (
+            <p>Are you sure you want to cancel this request?</p>
+          ) : (pendingValues && pendingValues.status === 'Returned') ? (
+            <p>Do you want to save changes?</p>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowConfirmation(false);
+              setPendingValues(null);
+            }}
+            startIcon={<CloseIcon />}
+            style={{
+              color: "lightgrey",
+              background: "grey",
+            }}
+          >
+            No
+          </Button>
+          <Button
+            onClick={handleConfirm}
+            variant="contained"
+            color="secondary"
+            startIcon={<SaveIcon />}
+          >
+            Yes
+          </Button>
+        </DialogActions>
+      </ModalPopup>
     </MuiPickersUtilsProvider>
   );
 };

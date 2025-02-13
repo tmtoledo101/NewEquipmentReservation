@@ -140,7 +140,84 @@ export class SharePointService {
     equipmentData: any[],
     files: File[]
   ): Promise<void> {
-    // Implementation here
+    try {
+      const currentUser = await this.getCurrentUser();
+      // Get the equipment items to update their blocked dates if status is Returned
+      if (values.status === 'Returned') {
+        const parsedEquipment = JSON.parse(JSON.stringify(equipmentData));
+        if (Array.isArray(parsedEquipment)) {
+          for (const equipment of parsedEquipment) {
+            // Get the equipment item from NewEquipment list
+            const equipmentItems = await sp.web.lists
+              .getByTitle("NewEquipment")
+              .items.filter(`Equiupment eq '${equipment.equipment}' and AssetNumber eq '${equipment.assetNumber}'`)
+              .get();
+
+            if (equipmentItems.length > 0) {
+              const equipmentItem = equipmentItems[0];
+              // Clear blocked dates based on time slot
+              const updateFields: any = {};
+              if (values.time === 'AM') {
+                updateFields.BlockedDateAM = '[]';
+              } else if (values.time === 'PM') {
+                updateFields.BlockedDatePM = '[]';
+              } else if (values.time === 'WholeDay') {
+                updateFields.BlockedDateWholeDay = '[]';
+              }
+
+              // Update the equipment item
+              await sp.web.lists
+                .getByTitle("NewEquipment")
+                .items.getById(equipmentItem.ID)
+                .update(updateFields);
+            }
+          }
+        }
+      }
+      //const requestDate = moment().format('YYYY/MM/DD');
+      // Update SharePoint list item
+      const updateData = {
+        Status: values.status,
+        Department: values.department,
+        ContactNumber: values.contactNumber,
+        Building: values.building,
+        BorrowedFrom: values.borrowedFrom,
+        Time: values.time,
+        FromDate: values.fromDate,
+        ToDate: values.toDate,
+        Remarks: values.remarks,
+        EquipmentData: JSON.stringify(equipmentData),
+        ...(values.status === 'Released' ? {
+          ReleasedBy: currentUser.Title,
+          ReleasedTo: values.department,
+          //ReleasedDate: requestDate
+        } : values.status === 'Returned' ? {
+          ReturnedBy: currentUser.Title,
+          ReturnedTo: values.borrowedFrom,
+          //ReturnedDate: requestDate
+        } : {})
+      };
+
+      await sp.web.lists
+        .getByTitle("NewEquipmentRequestList")
+        .items.getById(id)
+        .update(updateData);
+
+      // Handle file attachments if any
+      if (files && files.length > 0) {
+        const item = sp.web.lists
+          .getByTitle("NewEquipmentRequestList")
+          .items.getById(id);
+
+        // Upload each file
+        for (const file of files) {
+          await item.attachmentFiles.add(file.name, file);
+        }
+      }
+    } catch (error) {
+      console.error('Error in updateRequest:', error);
+      throw new Error(`Failed to update request: ${error.message}`);
+    }
   }
 
   public static async getCurrentUser() {
