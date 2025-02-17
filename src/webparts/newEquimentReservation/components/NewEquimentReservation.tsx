@@ -62,8 +62,8 @@ export default class NewEquimentReservation extends React.Component<INewEquiment
 
   private getLoggedinUser = async () => {
     const user = await SharePointService.getCurrentUser();
-    this.inputRef.current.setFieldValue("requestedBy", user.Title);
-    this.setState({ requestorEmail: user.Title });
+    this.inputRef.current.setFieldValue("requestedBy", user.Email);
+    this.setState({ requestorEmail: user.Email });
   }
 
   private getDepartments = async () => {

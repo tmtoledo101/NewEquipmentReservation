@@ -5,7 +5,7 @@ import "@pnp/sp/items";
 import * as moment from "moment";
 import { IEquipmentRequest } from "../interfaces/IEquipmentRequest";
 import { dateConverter, arrayToDropDownValues } from "../utils/helpers";
-
+import  {isDevelopmentMode } from "../../../../shared/utils/enivronmentHelper";
 export interface IFacilityMapItem {
   Quantity: number;
   AssetNumber?: string;
@@ -28,22 +28,37 @@ export class SharePointService {
     originalEquipmentList: any[];
   }> {
     try {
-      const items: any[] = await sp.web.lists
-        .getByTitle("NewEquipment")
-        .items.select(
-          "Building",
-          "BorrowedFrom/Department",
-          "Equiupment",
-          "AssetNumber",
-          "ID",
-          "BlockedDateAM",
-          "BlockedDatePM",
-          "BlockedDateWholeDay",
-          "ExclusiveTo"
-        )
-        .expand("BorrowedFrom/FieldValuesAsText")
-        .top(5000)
-        .get();
+      let allItems: any[] = [];
+    
+    // Initial page request
+    let page = await sp.web.lists
+      .getByTitle("NewEquipment")
+      .items.select(
+        "Building",
+        "BorrowedFrom/Department",
+        "Equiupment",
+        "AssetNumber",
+        "ID",
+        "BlockedDateAM",
+        "BlockedDatePM",
+        "BlockedDateWholeDay",
+        "ExclusiveTo"
+      )
+      .expand("BorrowedFrom/FieldValuesAsText")
+      .top(100)  // Process 100 items at a time
+      .getPaged();
+
+    // Add first page results
+    allItems = [...allItems, ...page.results];
+
+    // Get subsequent pages if they exist
+    while (page.hasNext) {
+      page = await page.getNext();
+      allItems = [...allItems, ...page.results];
+    }
+
+    console.log('Total items retrieved:', allItems.length);
+
 
       // Initialize data structures with proper typing
       const buildingList: { id: string; value: string }[] = [];
@@ -51,7 +66,7 @@ export class SharePointService {
       const buildEquipmentMap: { [key: string]: { [id: number]: IEquipmentMapItem } } = {};
 
       // Process each item using a more structured approach
-      items.forEach(item => {
+      allItems.forEach(item => {
         if (!item.Building) return;
 
         // Process building list - using Set for uniqueness
@@ -105,14 +120,14 @@ export class SharePointService {
         buildingCount: buildingList.length,
         borrowedMapKeys: Object.keys(buildBorrowedMap).length,
         equipmentMapKeys: Object.keys(buildEquipmentMap).length,
-        totalItems: items.length
+        totalItems: allItems.length
       });
 
       return {
         buildingList,
         buildBorrowedMap,
         buildEquipmentMap,
-        originalEquipmentList: items
+        originalEquipmentList: allItems
       };
     } catch (error) {
       console.error('Error in getEquipments:', error);
@@ -221,34 +236,55 @@ export class SharePointService {
   }
 
   public static async getCurrentUser() {
-    return await sp.web.currentUser.get();
+    const user = await sp.web.currentUser.get();
+
+    const currentUser = {
+      Email: isDevelopmentMode()? user.Title : user.Email,
+      Title: user.Title
+    };
+    return currentUser;
   }
 
   public static async getDepartments(email: string): Promise<{
     departments: { id: string; value: string }[];
     departmentSectorMap: { [key: string]: string };
   }> {
-    const deparmentData: any[] = await sp.web.lists
+    let allDepartmentData: any[] = [];
+    
+    // Initial page request
+    let page = await sp.web.lists
       .getByTitle("EquipUsersPerDepartment")
       .items.select(
         "EmployeeName/EMail",
         "Department/Department",
         "Department/Sector"
-      ).filter(`EmployeeName/Title eq '${email}'`)
+      )
+      .filter(`EmployeeName/Title eq '${email}'`)
       .expand(
         "Department/FieldValuesAsText",
         "EmployeeName/EMail"
       )
-      .top(5000) 
-      .get();
-    console.log(`deparmentData:`,deparmentData);
+      .top(100)  // Process 100 items at a time
+      .getPaged();
+
+    // Add first page results
+    allDepartmentData = [...allDepartmentData, ...page.results];
+
+    // Get subsequent pages if they exist
+    while (page.hasNext) {
+      page = await page.getNext();
+      allDepartmentData = [...allDepartmentData, ...page.results];
+    }
+
+    console.log(`Total departments retrieved:`, allDepartmentData.length);
+
     const departmentSectorMap = {};
-    deparmentData.forEach(item => {
+    allDepartmentData.forEach(item => {
       departmentSectorMap[item.Department.Department] = item.Department.Sector;
     });
 
     return {
-      departments: deparmentData.map(item => ({
+      departments: allDepartmentData.map(item => ({
         id: item.Department.Department,
         value: item.Department.Department
       })),
@@ -256,35 +292,56 @@ export class SharePointService {
     };
   }
 
-  public static async getEquipmentOwners(): Promise<{ownerEmails: string[], departmentsByOwner: {[key: string]: string[]}}> {
-    const equipmentList: any[] = await sp.web.lists
-      .getByTitle("EquipmentOwner")
-      .items.select(
-        "Department/Department",
-        "EquipmentOwner/Title",
-      ).expand(
-        "EquipmentOwner/Title",
-        "Department/FieldValuesAsText"
-      )
-      .top(5000)
-      .get();
-
-    console.log(`equipmentList:`,equipmentList);
-    const ownerEmails = equipmentList.map(item => item.EquipmentOwner.Title);
-    const departmentsByOwner = {};
-    
-    equipmentList.forEach(item => {
-      console.log(`EquipmentOwnerTitle:`,item.EquipmentOwner.Title);
-      if (!departmentsByOwner[item.EquipmentOwner.Title]) {
-        departmentsByOwner[item.EquipmentOwner.Title] = [];
+  public static async getEquipmentOwners(): Promise<{
+    ownerEmails: string[], 
+    departmentsByOwner: {[key: string]: string[]}
+  }> {
+    try {
+      let allEquipmentList: any[] = [];
+      
+      // Initial page request
+      let page = await sp.web.lists
+        .getByTitle("EquipmentOwner")
+        .items.select(
+          "Department/Department",
+          "EquipmentOwner/Title"
+        )
+        .expand(
+          "EquipmentOwner/Title",
+          "Department/FieldValuesAsText"
+        )
+        .top(1000)  // Process 100 items at a time
+        .getPaged();
+  
+      // Add first page results
+      allEquipmentList = [...allEquipmentList, ...page.results];
+  
+      // Get subsequent pages if they exist
+      while (page.hasNext) {
+        page = await page.getNext();
+        allEquipmentList = [...allEquipmentList, ...page.results];
       }
-      departmentsByOwner[item.EquipmentOwner.Title].push(item.Department.Department);
-    });
-
-    return {
-      ownerEmails: [...new Set(ownerEmails)],
-      departmentsByOwner
-    };
+  
+      console.log(`Total equipment owners retrieved:`, allEquipmentList.length);
+  
+      const ownerEmails = allEquipmentList.map(item => item.EquipmentOwner.Title);
+      const departmentsByOwner = {};
+      
+      allEquipmentList.forEach(item => {
+        if (!departmentsByOwner[item.EquipmentOwner.Title]) {
+          departmentsByOwner[item.EquipmentOwner.Title] = [];
+        }
+        departmentsByOwner[item.EquipmentOwner.Title].push(item.Department.Department);
+      });
+  
+      return {
+        ownerEmails: [...new Set(ownerEmails)],
+        departmentsByOwner
+      };
+    } catch (error) {
+      console.error('Error in getEquipmentOwners:', error);
+      throw new Error(`Failed to fetch equipment owners: ${error.message}`);
+    }
   }
 
   private static safeParseBlockedDates(value: any): string[] {
@@ -361,16 +418,28 @@ export class SharePointService {
       filterQuery += ` and (${deptQuery})`;
     }
     console.log(`filterQuery:`,filterQuery);
-    const requestItems = await sp.web.lists
+    let allRequestItems: any[] = [];
+    
+    // Initial page request
+    let page = await sp.web.lists
       .getByTitle("NewEquipmentRequestList")
       .items.select("*")
       .filter(filterQuery)
       .orderBy("Id", false)
-      .top(5000)
-      .get();
+      .top(100)  // Process 100 items at a time
+      .getPaged();
 
-      console.log(`requestItems:`,requestItems);
-    return requestItems.map(item => ({
+    // Add first page results
+    allRequestItems = [...allRequestItems, ...page.results];
+
+    // Get subsequent pages if they exist
+    while (page.hasNext) {
+      page = await page.getNext();
+      allRequestItems = [...allRequestItems, ...page.results];
+    }
+
+      console.log(`requestItems:`,allRequestItems);
+    return allRequestItems.map(item => ({
       building: item.Building,
       fromDate: item.FromDate,
       toDate: item.ToDate,

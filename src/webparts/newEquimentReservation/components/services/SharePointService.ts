@@ -7,14 +7,23 @@ import "@pnp/sp/site-groups";
 import * as moment from 'moment';
 import { arrayToDropDownValues, getCount, formatDate, generateBlockedDates } from '../utils/helpers';
 import { IEquipmentData, IDropdownItem } from '../interfaces/INewEquipmentReservation';
-
+import { isDevelopmentMode } from "../../../../shared/utils/enivronmentHelper";
 export class SharePointService {
   public static async getCurrentUser() {
-    return await sp.web.currentUser.get();
+    const user = await sp.web.currentUser.get();
+
+    const currentUser = {
+      Email: isDevelopmentMode()? user.Title : user.Email,
+      Title: user.Title
+    };
+    return currentUser;
   }
 
   public static async getDepartments(email: string) {
-    const deparmentData: any[] = await sp.web.lists
+    let allDepartmentData: any[] = [];
+    
+    // Initial page request
+    let page = await sp.web.lists
       .getByTitle("EquipUsersPerDepartment")
       .items.select(
         "EmployeeName/EMail",
@@ -24,19 +33,28 @@ export class SharePointService {
       .filter(`EmployeeName/Title eq '${email}'`)
       .expand(
         "Department/FieldValuesAsText",
-        "EmployeeName/EMail",
+        "EmployeeName/EMail"
       )
-      .top(5000)
-      .get();
+      .top(1000) // Process 100 items at a time
+      .getPaged();
 
-    if (deparmentData.length === 0) {
+    // Add first page results
+    allDepartmentData = [...allDepartmentData, ...page.results];
+
+    // Get subsequent pages if they exist
+    while (page.hasNext) {
+      page = await page.getNext();
+      allDepartmentData = [...allDepartmentData, ...page.results];
+    }
+
+    if (allDepartmentData.length === 0) {
       throw new Error('User details is not present in department list, kindly contact admin.');
     }
 
-    const departments = deparmentData.map(item => item.Department.Department);
+    const departments = allDepartmentData.map(item => item.Department.Department);
     const departmentSectorMap = {};
     
-    deparmentData.forEach(item => {
+    allDepartmentData.forEach(item => {
       if (!departmentSectorMap[item.Department.Department]) {
         departmentSectorMap[item.Department.Department] = item.Department.Sector;
       }
@@ -46,62 +64,75 @@ export class SharePointService {
       departments: arrayToDropDownValues(departments),
       departmentSectorMap
     };
+}
+
+public static async getEquipments() {
+  let allEquipmentData: any[] = [];
+  
+  // Initial page request
+  let page = await sp.web.lists
+    .getByTitle("NewEquipment")
+    .items.select(
+      "Building",
+      "BorrowedFrom/Department",
+      "Equiupment",
+      "AssetNumber",
+      "ID",
+      "BlockedDateAM",
+      "BlockedDatePM",
+      "BlockedDateWholeDay",
+      "ExclusiveTo"
+    )
+    .expand("BorrowedFrom/FieldValuesAsText")
+    .top(100)  // Process 100 items at a time
+    .getPaged();
+
+  // Add first page results
+  allEquipmentData = [...allEquipmentData, ...page.results];
+
+  // Get subsequent pages if they exist
+  while (page.hasNext) {
+    page = await page.getNext();
+    allEquipmentData = [...allEquipmentData, ...page.results];
   }
 
-  public static async getEquipments() {
-    const equipmentData: any[] = await sp.web.lists
-      .getByTitle("NewEquipment")
-      .items.select(
-        "Building",
-        "BorrowedFrom/Department",
-        "Equiupment",
-        "AssetNumber",
-        "ID",
-        "BlockedDateAM",
-        "BlockedDatePM",
-        "BlockedDateWholeDay",
-        "ExclusiveTo",
-      )
-      .expand("BorrowedFrom/FieldValuesAsText")
-      .top(5000)
-      .get();
+  const buildObj = {};
+  const buildBorrowedMap = {};
+  const buildEquipmentMap = {};
 
-    const buildObj = {};
-    const buildBorrowedMap = {};
-    const buildEquipmentMap = {};
-
-    equipmentData.forEach((item) => {
-      if (item.Building) {
-        buildObj[item.Building] = item.Building;
-      }
-      
-      if (!buildBorrowedMap[item.Building]) {
-        buildBorrowedMap[item.Building] = new Set();
-      }
-      
-      if (!buildEquipmentMap[`${item.Building}-${item.BorrowedFrom.Department}`]) {
-        buildEquipmentMap[`${item.Building}-${item.BorrowedFrom.Department}`] = {};
-      }
-      
-      buildBorrowedMap[item.Building].add({
-        borrowed: item.BorrowedFrom.Department,
-        exclusiveTo: item.ExclusiveTo
-      });
-      
-      if (!buildEquipmentMap[`${item.Building}-${item.BorrowedFrom.Department}`][item.Equiupment]) {
-        buildEquipmentMap[`${item.Building}-${item.BorrowedFrom.Department}`][item.Equiupment] = [];
-      }
-      
-      buildEquipmentMap[`${item.Building}-${item.BorrowedFrom.Department}`][item.Equiupment].push(item);
+  allEquipmentData.forEach((item) => {
+    if (item.Building) {
+      buildObj[item.Building] = item.Building;
+    }
+    
+    if (!buildBorrowedMap[item.Building]) {
+      buildBorrowedMap[item.Building] = new Set();
+    }
+    
+    if (!buildEquipmentMap[`${item.Building}-${item.BorrowedFrom.Department}`]) {
+      buildEquipmentMap[`${item.Building}-${item.BorrowedFrom.Department}`] = {};
+    }
+    
+    buildBorrowedMap[item.Building].add({
+      borrowed: item.BorrowedFrom.Department,
+      exclusiveTo: item.ExclusiveTo
     });
+    
+    if (!buildEquipmentMap[`${item.Building}-${item.BorrowedFrom.Department}`][item.Equiupment]) {
+      buildEquipmentMap[`${item.Building}-${item.BorrowedFrom.Department}`][item.Equiupment] = [];
+    }
+    
+    buildEquipmentMap[`${item.Building}-${item.BorrowedFrom.Department}`][item.Equiupment].push(item);
+  });
 
-    return {
-      buildingList: arrayToDropDownValues(Object.keys(buildObj)),
-      buildBorrowedMap,
-      buildEquipmentMap,
-      originalEquipmentList: equipmentData
-    };
-  }
+  return {
+    buildingList: arrayToDropDownValues(Object.keys(buildObj)),
+    buildBorrowedMap,
+    buildEquipmentMap,
+    originalEquipmentList: allEquipmentData
+  };
+}
+  
 
   public static async getTime() {
     const timeData: any[] = await sp.web.lists
@@ -242,14 +273,27 @@ export class SharePointService {
     const key = `BlockedDate${time}`;
 
     const updatePromises = currentAssetList.map(async (assetNumber) => {
-      const equipment = await sp.web.lists
+      let allEquipment: any[] = [];
+      
+      // Initial page request
+      let page = await sp.web.lists
         .getByTitle('NewEquipment')
         .items
         .filter(`AssetNumber eq '${assetNumber}'`)
-        .get();
+        .top(1000)  // Process 100 items at a time
+        .getPaged();
 
-      if (equipment.length > 0) {
-        const item = equipment[0];
+      // Add first page results
+      allEquipment = [...allEquipment, ...page.results];
+
+      // Get subsequent pages if they exist
+      while (page.hasNext) {
+        page = await page.getNext();
+        allEquipment = [...allEquipment, ...page.results];
+      }
+
+      if (allEquipment.length > 0) {
+        const item = allEquipment[0];
         const existingDates = item[key] ? JSON.parse(item[key]) : [];
         const newDates = blockedDates.filter(date => !existingDates.includes(date));
 
@@ -258,7 +302,6 @@ export class SharePointService {
         });
       }
     });
-
     await Promise.all(updatePromises);
   }
 }
