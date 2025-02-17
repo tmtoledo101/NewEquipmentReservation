@@ -8,6 +8,14 @@ export const validateDateTime = (startDateTime: Date | string | null, endDateTim
   moment(endDateTime).isValid() &&
   moment(endDateTime).isSameOrAfter(startDateTime);
 
+export const validateDateRange = (startDate: Date | string | null, endDate: Date | string | null): boolean => {
+  if (!startDate || !endDate) return false;
+  const start = moment(startDate);
+  const end = moment(endDate);
+  const monthsDiff = end.diff(start, 'months', true);
+  return monthsDiff <= 3;
+};
+
 export const equipmentReservationSchema = yup.object().shape({
   requestedBy: yup.string().required(),
   department: yup.string().required("Department is required"),
@@ -48,7 +56,21 @@ export const equipmentReservationSchema = yup.object().shape({
         )
         .when("fromDate", (fromDate, schema) => {
           return schema.test({
-            test: (toDate) => validateDateTime(fromDate, toDate),
+            test: (toDate) => {
+              // First validate date time order
+              if (!validateDateTime(fromDate, toDate)) {
+                return false;
+              }
+              // Then validate 3-month limit
+              if (!validateDateRange(fromDate, toDate)) {
+                throw new yup.ValidationError(
+                  "Reservation exceeds 3 months limit",
+                  toDate,
+                  "toDate"
+                );
+              }
+              return true;
+            },
             message: "Invalid date range, fromDate < toDate",
           });
         })
@@ -58,7 +80,21 @@ export const equipmentReservationSchema = yup.object().shape({
       if (fromDate) {
         return schema
           .test({
-            test: (toDate) => validateDateTime(fromDate, toDate),
+            test: (toDate) => {
+              // First validate date time order
+              if (!validateDateTime(fromDate, toDate)) {
+                return false;
+              }
+              // Then validate 3-month limit
+              if (!validateDateRange(fromDate, toDate)) {
+                throw new yup.ValidationError(
+                  "Reservation exceeds 3 months limit",
+                  toDate,
+                  "toDate"
+                );
+              }
+              return true;
+            },
             message: "Invalid date range",
           })
           .required("toDate is required");

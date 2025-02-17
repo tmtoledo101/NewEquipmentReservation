@@ -3,6 +3,7 @@
   "port": 4321,
   "https": true,
   "initialPage": "https://bspgovph.sharepoint.com/sites/ResourceReservationDev/_layouts/15/workbench.aspx",
+  //"initialPage": "https://s5b36.sharepoint.com/sites/ResourceReservationDev/_layouts/15/workbench.aspx",
   "api": {
     "port": 5432,
     "entryPath": "node_modules/@microsoft/sp-webpart-workbench/lib/api/"
