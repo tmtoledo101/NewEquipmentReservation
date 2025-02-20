@@ -60,7 +60,11 @@ export const EquipmentList: React.FC<IEquipmentListProps> = ({
                 <TableCell>
                   <IconButton
                     color="primary"
-                    onClick={() => onView(index)}
+                    onClick={() => {
+                      if (equipmentData && equipmentData.length > 0 && index >= 0 && index < equipmentData.length) {
+                        onView(index);
+                      }
+                    }}
                     size="small"
                   >
                     <VisibilityIcon />

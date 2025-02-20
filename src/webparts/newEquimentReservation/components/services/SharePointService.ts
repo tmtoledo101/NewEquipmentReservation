@@ -8,6 +8,7 @@ import * as moment from 'moment';
 import { arrayToDropDownValues, getCount, formatDate, generateBlockedDates } from '../utils/helpers';
 import { IEquipmentData, IDropdownItem } from '../interfaces/INewEquipmentReservation';
 import { isDevelopmentMode } from "../../../../shared/utils/enivronmentHelper";
+import { configService } from "../../../../shared/services/ConfigurationService";
 export class SharePointService {
   public static async getCurrentUser() {
     const user = await sp.web.currentUser.get();
@@ -188,7 +189,7 @@ public static async getEquipments() {
       });
 
       if (files.length > 0) {
-        const folderPath = "/sites/ResourceReservation/NewEquipmentRequestDocs/" + iar.data.GUID;
+        const folderPath = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation" + "/NewEquipmentRequestDocs/" + iar.data.GUID;
         await sp.web.lists.getByTitle("NewEquipmentRequestDocs").rootFolder.folders.add(iar.data.GUID);
 
         await Promise.all(files.map(file => {
