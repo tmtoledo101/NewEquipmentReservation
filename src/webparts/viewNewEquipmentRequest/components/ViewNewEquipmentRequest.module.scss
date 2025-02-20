@@ -105,4 +105,36 @@
       display: inline-block;
     }
   }
+
+  .data {
+    width: 100%;
+    button {
+      margin-top: 10px;
+    }
+  }
+
+  .equipmentDetails {
+    padding: 0 20px;
+    margin-top: 20px;
+  }
+
+  :global {
+    table,
+    th,
+    td {
+      border: 1px solid black;
+      border-collapse: collapse;
+      min-height: 100px;
+      padding: 8px;
+    }
+
+    tr > td {
+      text-align: center;
+    }
+
+    table {
+      width: 75%;
+      margin-top: 16px;
+    }
+  }
 }
