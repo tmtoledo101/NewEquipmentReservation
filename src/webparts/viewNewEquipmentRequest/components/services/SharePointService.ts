@@ -252,17 +252,19 @@ export class SharePointService {
     let allDepartmentData: any[] = [];
     
     // Initial page request
+    const  employeeTitleEmail = isDevelopmentMode()? "EmployeeName/Title":"EmployeeName/EMail";
     let page = await sp.web.lists
+   
       .getByTitle("EquipUsersPerDepartment")
       .items.select(
-        "EmployeeName/EMail",
+        employeeTitleEmail,
         "Department/Department",
         "Department/Sector"
       )
-      .filter(`EmployeeName/Title eq '${email}'`)
+      .filter(`${employeeTitleEmail} eq '${email}'`)
       .expand(
         "Department/FieldValuesAsText",
-        "EmployeeName/EMail"
+        employeeTitleEmail
       )
       .top(100)  // Process 100 items at a time
       .getPaged();

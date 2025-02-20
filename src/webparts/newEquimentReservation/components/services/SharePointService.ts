@@ -24,17 +24,18 @@ export class SharePointService {
     let allDepartmentData: any[] = [];
     
     // Initial page request
+    const employeeEmailTitle = isDevelopmentMode()? "EmployeeName/Title":"EmployeeName/EMail";
     let page = await sp.web.lists
       .getByTitle("EquipUsersPerDepartment")
       .items.select(
-        "EmployeeName/EMail",
+        employeeEmailTitle,
         "Department/Department",
         "Department/Sector"
       )
       .filter(`EmployeeName/Title eq '${email}'`)
       .expand(
         "Department/FieldValuesAsText",
-        "EmployeeName/EMail"
+        employeeEmailTitle
       )
       .top(1000) // Process 100 items at a time
       .getPaged();
@@ -170,7 +171,7 @@ public static async getEquipments() {
     for (let i = 0; i <= days; i++) {
       const requestDate = moment(from).add(i, 'days').format('YYYY/MM/DD');
       
-      const iar = await sp.web.lists.getByTitle('NewEquipmentRequestList').items.add({
+      const item = await sp.web.lists.getByTitle('NewEquipmentRequestList').items.add({
         Title: formData.requestedBy,
         RequestedBy: formData.requestedBy,
         Department: formData.department,
@@ -187,31 +188,41 @@ public static async getEquipments() {
         referCount: `${count + 1}`,
         ReferenceNumber: referenceNumber,
       });
-
+      
       if (files.length > 0) {
-        const folderPath = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation" + "/NewEquipmentRequestDocs/" + iar.data.GUID;
-        await sp.web.lists.getByTitle("NewEquipmentRequestDocs").rootFolder.folders.add(iar.data.GUID);
-
-        await Promise.all(files.map(file => {
-          if (file.size <= 10485760) {
-            return sp.web.getFolderByServerRelativeUrl(folderPath)
-              .files.add(file.name, file, true)
-              .then(result => {
-                return result.file.getItem().then(item => {
-                  return item.update({ RequestId: iar.data.ID });
-                });
-              });
-          } else {
-            return sp.web.getFolderByServerRelativeUrl(folderPath)
-              .files.addChunked(file.name, file, data => {
-                console.log({ data });
-              }, true)
-              .then(({ file: fileData }) => fileData.getItem())
-              .then(item => {
-                return item.update({ RequestId: iar.data.ID });
-              });
-          }
-        }));
+        const docLibrary = "NewEquipmentRequestDocs";
+        const _itemId = item.data.ID;
+        
+        const f = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation" + "/" + docLibrary + "/" + item.data.GUID;
+        
+        await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.add(item.data.GUID)
+          .then(r => {
+            Promise.all(files.map((file) => {
+              if (file.size <= 10485760) {
+                // Regular file upload
+                return sp.web.getFolderByServerRelativeUrl(f).files.add(file.name, file, true)
+                  .then(fileResult => {
+                    return fileResult.file.getItem()
+                      .then(fileItem => {  // Renamed from 'item' to 'fileItem'
+                        return fileItem.update({
+                          RequestId: _itemId
+                        });
+                      });
+                  });
+              } else {
+                // Chunked upload for large files
+                return sp.web.getFolderByServerRelativeUrl(f).files.addChunked(file.name, file, d1 => {
+                  console.log({ data: d1 });
+                }, true)
+                  .then(({ file: fileData }) => fileData.getItem())
+                  .then((fileItem: any) => {  // Renamed from 'item' to 'fileItem'
+                    return fileItem.update({
+                      RequestId: _itemId
+                    });
+                  });
+              }
+            }));
+          });
       }
     }
   }

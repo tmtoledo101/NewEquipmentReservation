@@ -118,6 +118,15 @@
     margin-top: 20px;
   }
 
+  .closeBtn {
+    border: none;
+    padding: 5px 15px;
+    position: absolute;
+    right: -11px;
+    top: 2px;
+    outline: none;
+  }
+
   :global {
     table,
     th,

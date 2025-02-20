@@ -4,6 +4,7 @@ import "@pnp/sp/lists";
 import "@pnp/sp/items";
 import { dateFormat } from "../utils/helpers";
 import { isDevelopmentMode } from "../../../../shared/utils/enivronmentHelper";
+import { configService } from "../../../../shared/services/ConfigurationService";
 export class SharePointService {
   public static async getLoggedinUser() {
      const user = await sp.web.currentUser.get();
@@ -33,10 +34,10 @@ export class SharePointService {
       .items.select(
         "EmployeeName/EMail",
         "Department/Department",
-      ).filter(`EmployeeName/EMail eq '${email}'`)
+      ).filter(isDevelopmentMode()? `EmployeeName/Title eq '${email}'` : `EmployeeName/EMail eq '${email}'`)
       .expand(
         "Department/FieldValuesAsText",
-        "EmployeeName/EMail",
+        isDevelopmentMode()?"EmployeeName/Title":"EmployeeName/EMail",
       )
       .get();
   
@@ -173,9 +174,10 @@ export class SharePointService {
   }
 
   public static async uploadFiles(guid: string, files: File[]) {
-    const f = "/sites/ResourceReservation" + "/NewEquipmentRequestDocs/" + guid;
-    await sp.web.lists.getByTitle("NewEquipmentRequestDocs").rootFolder.folders.getByName(guid).delete();
-    await sp.web.lists.getByTitle("NewEquipmentRequestDocs").rootFolder.folders.add(guid);
+    const docLibrary = "NewEquipmentRequestDocs";
+    const f = configService.isDevUser() ? "/sites/ResourceReservationDev" :"/sites/ResourceReservation" + "/" + docLibrary +"/" + guid;
+    await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.getByName(guid).delete();
+    await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.add(guid);
 
     const uploadPromises = files.map(file => {
       if (file.size <= 10485760) {

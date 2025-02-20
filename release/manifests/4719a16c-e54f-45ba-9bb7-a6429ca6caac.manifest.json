@@ -15,10 +15,10 @@
         "default": "Other"
       },
       "title": {
-        "default": "newEquimentReservation"
+        "default": "New Equipment Reservation_2025"
       },
       "description": {
-        "default": "newEquimentReservation description"
+        "default": "Equipment Reservation System"
       },
       "officeFabricIconFontName": "Page",
       "properties": {
@@ -34,7 +34,7 @@
     "scriptResources": {
       "new-equiment-reservation-web-part": {
         "type": "path",
-        "path": "new-equiment-reservation-web-part_04fa5cc3cf46d6d884b0.js"
+        "path": "new-equiment-reservation-web-part_047c54e4ee64a7e51128.js"
       },
       "@microsoft/sp-loader": {
         "type": "component",

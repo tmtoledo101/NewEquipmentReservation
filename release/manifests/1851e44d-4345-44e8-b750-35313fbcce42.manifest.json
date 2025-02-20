@@ -15,7 +15,7 @@
         "default": "Other"
       },
       "title": {
-        "default": "displayNewEquipmentRequest"
+        "default": "displayNewEquipmentReques_2025"
       },
       "description": {
         "default": "displayNewEquipmentRequest description"
@@ -34,7 +34,7 @@
     "scriptResources": {
       "display-new-equipment-request-web-part": {
         "type": "path",
-        "path": "display-new-equipment-request-web-part_29b94e3e3629c258592a.js"
+        "path": "display-new-equipment-request-web-part_9a60b266ae3d9a79af47.js"
       },
       "@microsoft/sp-loader": {
         "type": "component",
