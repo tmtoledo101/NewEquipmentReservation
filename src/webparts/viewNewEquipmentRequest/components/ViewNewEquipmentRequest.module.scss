@@ -9,7 +9,38 @@
   }
 
   .width {
+    width: 100%;
     max-width: 300px;
+    margin-bottom: 16px;
+  }
+
+  .label {
+    font-weight: $ms-font-weight-semibold;
+    font-size: $ms-font-size-m;
+    height: 32px;
+    line-height: 32px;
+    margin: 0 4px;
+    vertical-align: top;
+    display: inline-block;
+  }
+
+  .dropZone {
+    min-height: 140px !important;
+  }
+
+  .previewChip {
+    min-width: 160px;
+    max-width: 210px;
+    margin: 4px;
+  }
+
+  .formHandle {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    button {
+      margin-left: 20px;
+    }
   }
 
   .error {

@@ -1,17 +1,28 @@
+@import '~office-ui-fabric-react/dist/sass/References.scss';
+
 .width {
   width: 100%;
+  max-width: 300px;
+  margin-bottom: 16px;
 }
 
 .label {
-  margin-bottom: 8px;
-  font-size: 14px;
+  font-weight: $ms-font-weight-semibold;
+  font-size: $ms-font-size-m;
+  height: 32px;
+  line-height: 32px;
+  margin: 0 4px;
+  vertical-align: top;
+  display: inline-block;
 }
 
 .dropZone {
-  min-height: 100px;
+  min-height: 140px !important;
 }
 
 .previewChip {
+  min-width: 160px;
+  max-width: 210px;
   margin: 4px;
 }
 
@@ -19,6 +30,9 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  button {
+    margin-left: 20px;
+  }
 }
 
 .equipmentDetails {

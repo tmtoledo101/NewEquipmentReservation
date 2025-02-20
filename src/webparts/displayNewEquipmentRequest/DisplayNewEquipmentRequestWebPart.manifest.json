@@ -17,7 +17,7 @@
   "preconfiguredEntries": [{
     "groupId": "5c03119e-3074-46fd-976b-c60198311f70", // Other
     "group": { "default": "Other" },
-    "title": { "default": "displayNewEquipmentRequest" },
+    "title": { "default": "displayNewEquipmentReques_2025" },
     "description": { "default": "displayNewEquipmentRequest description" },
     "officeFabricIconFontName": "Page",
     "properties": {

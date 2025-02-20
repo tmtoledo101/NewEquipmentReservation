@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { TextField, MenuItem } from '@material-ui/core';
+import { TextField, MenuItem, FormControl } from '@material-ui/core';
 import { KeyboardDatePicker, DatePicker } from '@material-ui/pickers';
 import { useField, useFormikContext } from 'formik';
 
@@ -31,18 +31,20 @@ export const CustomInput: React.FC<ICustomInputProps> = ({
   const hasError = meta.touched && !!meta.error;
 
   return (
-    <TextField
-      {...field}
-      {...props}
-      fullWidth
-      variant="outlined"
-      label={label}
-      disabled={disabled}
-      multiline={multiline}
-      rows={rows}
-      error={hasError}
-      helperText={hasError ? meta.error : ''}
-    />
+    <FormControl fullWidth>
+      <TextField
+        {...field}
+        {...props}
+        label={label}
+        disabled={disabled}
+        multiline={multiline}
+        rows={rows}
+        error={hasError}
+        helperText={hasError ? meta.error : ''}
+        variant="standard"
+        fullWidth
+      />
+    </FormControl>
   );
 };
 
@@ -63,29 +65,32 @@ export const CustomDateTimePicker: React.FC<ICustomDateTimePickerProps> = ({
   const hasError = meta.touched && !!meta.error;
 
   return (
-    <DatePicker
-      {...field}
-      label={label}
-      variant="inline"
-      inputVariant="standard"
-      fullWidth
-      format="MM/dd/yyyy"
-      error={hasError}
-      helperText={hasError ? meta.error : ''}
-      onChange={(date) => {
-        helpers.setValue(date);
-        if (handleChange) {
-          handleChange(date);
-        }
-      }}
-      disabled={disabled}
-      InputProps={{
-        readOnly: true
-      }}
-      invalidDateMessage="Invalid date format"
-      maxDateMessage="Date exceeds allowable range"
-      minDateMessage="Date is too early"
-    />
+    <FormControl fullWidth>
+      <DatePicker
+        {...field}
+        label={label}
+        clearable
+        autoOk
+        disablePast
+        format="MM/dd/yyyy"
+        error={hasError}
+        helperText={hasError ? meta.error : ''}
+        onChange={(date) => {
+          helpers.setValue(date);
+          if (handleChange) {
+            handleChange(date);
+          }
+        }}
+        disabled={disabled}
+        InputProps={{
+          readOnly: true,
+          style: { width: '100%' }
+        }}
+        invalidDateMessage="Invalid date format"
+        maxDateMessage="Date exceeds allowable range"
+        minDateMessage="Date is too early"
+      />
+    </FormControl>
   );
 };
 
@@ -110,26 +115,28 @@ export const Dropdown: React.FC<IDropdownProps> = ({
   };
 
   return (
-    <TextField
-      select
-      fullWidth
-      variant="outlined"
-      label={label}
-      error={hasError}
-      helperText={hasError ? meta.error : ''}
-      disabled={disabled}
-      value={field.value || ''}
-      onChange={handleDropdownChange}
-      {...props}
-    >
-      <MenuItem value="">
-        <em>Select...</em>
-      </MenuItem>
-      {items.map((item) => (
-        <MenuItem key={item.id} value={item.value}>
-          {item.value}
+    <FormControl fullWidth>
+      <TextField
+        select
+        label={label}
+        error={hasError}
+        helperText={hasError ? meta.error : ''}
+        disabled={disabled}
+        value={field.value || ''}
+        onChange={handleDropdownChange}
+        variant="standard"
+        fullWidth
+        {...props}
+      >
+        <MenuItem value="">
+          <em>Select...</em>
         </MenuItem>
-      ))}
-    </TextField>
+        {items.map((item) => (
+          <MenuItem key={item.id} value={item.value}>
+            {item.value}
+          </MenuItem>
+        ))}
+      </TextField>
+    </FormControl>
   );
 };

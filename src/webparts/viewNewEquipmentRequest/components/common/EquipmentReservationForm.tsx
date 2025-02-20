@@ -21,7 +21,7 @@ import { ModalPopup } from './ModalPopup';
 import { SharePointService } from '../services/SharePointService';
 import { IEquipmentRequest } from '../interfaces/IEquipmentRequest';
 import * as Yup from 'yup';
-import styles from '../ViewNewEquipmentRequest.module.scss';
+import styles from './EquipmentReservationForm.module.scss';
 
 const equipmentReservationSchema = Yup.object().shape({
   requestedBy: Yup.string().required('Required'),
@@ -38,42 +38,6 @@ const equipmentReservationSchema = Yup.object().shape({
     .min(Yup.ref('fromDate'), 'End date must be after start date'),
   remarks: Yup.string(),
 });
-
-interface IFormStyles {
-  formField: {
-    width: string;
-    marginBottom: string;
-  };
-  label: {
-    marginBottom: string;
-    fontSize: string;
-  };
-  dropZoneClass: string;
-  previewChipClass: string;
-  formHandle: {
-    display: string;
-    justifyContent: string;
-    gap: string;
-  };
-}
-
-const formStyles: IFormStyles = {
-  formField: {
-    width: '100%',
-    marginBottom: '16px',
-  },
-  label: {
-    marginBottom: '8px',
-    fontSize: '14px',
-  },
-  dropZoneClass: 'dropZone',
-  previewChipClass: 'previewChip',
-  formHandle: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '8px',
-  },
-};
 
 interface IEquipmentReservationFormProps {
   isOpen: boolean;
@@ -424,15 +388,15 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                   </Grid>
 
                   <Grid item xs={6}>
-                    <div style={formStyles.formField}>
-                      <div style={formStyles.label}>Requested By</div>
+                    <div className={styles.width}>
+                      <div className={styles.label}>Requested By</div>
                       <CustomInput name="requestedBy" disabled />
                     </div>
                   </Grid>
 
                   <Grid item xs={6}>
-                    <div style={formStyles.formField}>
-                      <div style={formStyles.label}>Department</div>
+                    <div className={styles.width}>
+                      <div className={styles.label}>Department</div>
                       <Dropdown
                         items={departmentList}
                         name="department"
@@ -441,15 +405,15 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                   </Grid>
 
                   <Grid item xs={6}>
-                    <div style={formStyles.formField}>
-                      <div style={formStyles.label}>Contact No.</div>
+                    <div className={styles.width}>
+                      <div className={styles.label}>Contact No.</div>
                       <CustomInput name="contactNumber" />
                     </div>
                   </Grid>
 
                   <Grid item xs={6}>
-                    <div style={formStyles.formField}>
-                      <div style={formStyles.label}>Building</div>
+                    <div className={styles.width}>
+                      <div className={styles.label}>Building</div>
                       <Dropdown
                         items={buildingList}
                         name="building"
@@ -459,8 +423,8 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                   </Grid>
 
                   <Grid item xs={6}>
-                    <div style={formStyles.formField}>
-                      <div style={formStyles.label}>Borrowed From</div>
+                    <div className={styles.width}>
+                      <div className={styles.label}>Borrowed From</div>
                       <Dropdown
                         items={borrowedFromList}
                         name="borrowedFrom"
@@ -470,8 +434,8 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                   </Grid>
 
                   <Grid item xs={6}>
-                    <div style={formStyles.formField}>
-                      <div style={formStyles.label}>Time</div>
+                    <div className={styles.width}>
+                      <div className={styles.label}>Time</div>
                       <Dropdown
                         items={timeList}
                         name="time"
@@ -599,15 +563,15 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                   </Grid>
 
                   <Grid item xs={12}>
-                    <div style={formStyles.formField}>
-                      <div style={formStyles.label}>Remarks</div>
+                    <div className={styles.width}>
+                      <div className={styles.label}>Remarks</div>
                       <CustomInput name="remarks" />
                     </div>
                   </Grid>
 
                   <Grid item xs={12}>
-                    <div style={formStyles.formField}>
-                      <div style={formStyles.label}>Status</div>
+                    <div className={styles.width}>
+                      <div className={styles.label}>Status</div>
                       <Dropdown
                         items={tabValue === 3 ? 
                           [{ id: 'Returned', value: 'Returned' }] :
@@ -622,7 +586,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                   </Grid>
 
                   <Grid item xs={6}>
-                    <div style={formStyles.label}>
+                    <div className={styles.label}>
                       Attachment Here
                     </div>
                   </Grid>
@@ -632,12 +596,12 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       showPreviews={true}
                       showPreviewsInDropzone={false}
                       useChipsForPreview
-                      dropzoneClass={formStyles.dropZoneClass}
+                      dropzoneClass={styles.dropZone}
                       previewGridProps={{
                         container: { spacing: 1, direction: "row" },
                       }}
                       previewChipProps={{
-                        classes: { root: formStyles.previewChipClass },
+                        classes: { root: styles.previewChip },
                       }}
                       dropzoneText="Drag and drop files here or click"
                       previewText="Selected files"
@@ -647,7 +611,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                   </Grid>
                 </Grid>
 
-                <DialogActions>
+                <DialogActions className={styles.formHandle}>
                   <Button
                     onClick={onClose}
                     startIcon={<CloseIcon />}
