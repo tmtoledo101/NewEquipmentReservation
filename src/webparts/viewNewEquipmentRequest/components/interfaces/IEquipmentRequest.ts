@@ -12,6 +12,8 @@ export interface IEquipmentRequest {
   status: string;
   remarks?: string;
   equipment: string;
+  quantity?: string;
+  assetNumber?: string[];
   returnedBy?: string;
   returnedTo?: string;
   returnedDate?: string;

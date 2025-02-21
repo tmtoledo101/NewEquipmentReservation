@@ -2,6 +2,24 @@ import * as yup from "yup";
 import * as moment from "moment";
 import { validateDateTime } from "./helpers";
 
+export const equipmentReservationSchema = yup.object().shape({
+  requestedBy: yup.string().required('Requested By Required'),
+  department: yup.string().required('Department is Required'),
+  contactNumber: yup.string().required('Contact Number is Required'),
+  building: yup.string().required('Building is Required'),
+  borrowedFrom: yup.string().required('Borrowed From is Required'),
+  time: yup.string().required('Time is Required'),
+  status: yup.string()
+    .required('Status is Required')
+    .oneOf(['Released', 'Cancelled', 'Returned'], 'Invalid status value'),
+  fromDate: yup.date().required('From Date is Required').nullable(),
+  toDate: yup.date()
+    .required('To Date is Required')
+    .nullable()
+    .min(yup.ref('fromDate'), 'End date must be after start date'),
+  remarks: yup.string(),
+});
+
 export const searchFormValidationSchema = yup.object().shape({
   fromDate: yup.lazy((data) => {
     if (data) {
