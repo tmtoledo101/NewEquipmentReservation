@@ -1,29 +1,23 @@
-import * as React from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Grid,
-  Button,
-} from '@material-ui/core';
-import DeleteIcon from '@material-ui/icons/Delete';
-import SaveIcon from '@material-ui/icons/Save';
-import { Formik } from 'formik';
-import { Dropdown } from './FormComponents';
+import * as React from "react";
+import { Grid, Button } from "@material-ui/core";
+import { FormikProps, Formik } from "formik";
+import { ModalPopup } from "./ModalPopup";
+import { Dropdown } from "./FormComponents";
+import { IFormValues } from "../interfaces/IFormValues";
+import styles from "../ViewNewEquipmentRequest.module.scss";
 
 interface IEquipmentDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (formik: any) => void;
-  onDelete: (formik: any) => void;
-  formik: any;
-  equipmentList: Array<{ id: string; value: string }>;
+  onSave: (formik: FormikProps<IFormValues>) => void;
+  onDelete: (formik: FormikProps<IFormValues>) => void;
+  formik: FormikProps<IFormValues>;
+  equipmentList: Array<{ id: string | number; value: string }>;
   quantityList: Array<{ id: string | number; value: string }>;
   assetList: string[];
-  equipmentError: string;
   handleEquipment: (e: any) => void;
   handleQuantity: (e: any) => void;
+  equipmentError: string;
 }
 
 export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
@@ -35,105 +29,123 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
   equipmentList,
   quantityList,
   assetList,
-  equipmentError,
   handleEquipment,
   handleQuantity,
+  equipmentError,
 }) => {
-  if (!formik) return null;
+  const assetItems = React.useMemo(() => 
+    assetList.map((item, index) => ({
+      id: index,
+      value: item,
+    })), [assetList]
+  );
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={() => {
-        if (formik && formik.setFieldValue) {
-          formik.setFieldValue("equipment", "");
-          formik.setFieldValue("quantity", "");
-          formik.setFieldValue("assetNumber", []);
-          formik.setFieldValue("currentRecord", -1);
-        }
-        onClose();
-      }} 
-      maxWidth="sm" 
-      fullWidth
+    <ModalPopup
+      title="Add Equipment"
+      hideCloseIcon={false}
+      open={open}
+      onClose={onClose}
     >
-      <DialogTitle>Equipment Details</DialogTitle>
       <Formik
-        enableReinitialize
-  initialValues={{
-    equipment: formik.values.equipment || '',
-    quantity: formik.values.quantity || '',
-    assetNumber: formik.values.assetNumber || [],
-    currentRecord: typeof formik.values.currentRecord === 'number' ? formik.values.currentRecord : -1,
-  }}
+        initialValues={formik.values}
         onSubmit={() => {}}
+        enableReinitialize
+        innerRef={(instance) => {
+          if (instance) {
+            Object.assign(instance, formik);
+          }
+        }}
       >
-        {({ values, setFieldValue }) => (
-          <>
-            <DialogContent>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <div style={{ marginBottom: '16px' }}>
-                    <div style={{ marginBottom: '8px' }}>Equipment</div>
-                    <Dropdown
-                      name="equipment"
-                      items={equipmentList}
-                      handleChange={handleEquipment}
-                    />
-                    {equipmentError && (
-                      <div style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
-                        {equipmentError}
-                      </div>
-                    )}
-                  </div>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <div style={{ marginBottom: '16px' }}>
-                    <div style={{ marginBottom: '8px' }}>Quantity</div>
-                    <Dropdown
-                      name="quantity"
-                      items={quantityList}
-                      handleChange={handleQuantity}
-                    />
-                  </div>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <div style={{ marginBottom: '16px' }}>
-                    <div style={{ marginBottom: '8px' }}>Asset Number</div>
-                    <div style={{ border: '1px solid #ccc', padding: '8px', borderRadius: '4px', minHeight: '56px' }}>
-                      {values.assetNumber.map((asset: string, index: number) => (
-                        <div key={index} style={{ margin: '4px 0' }}>{asset}</div>
-                      ))}
-                    </div>
-                  </div>
-                </Grid>
+        <form>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <div className={styles.width}>
+                <div className={styles.label}>Equipment</div>
+                <div className={styles.data}>
+                  <Dropdown
+                    items={equipmentList}
+                    name="equipment"
+                    handleChange={handleEquipment}
+                    multiple={false}
+                  />
+                </div>
+              </div>
+            </Grid>
+            <Grid item xs={6}>
+              <div className={styles.width}>
+                <div className={styles.label}>Quantity</div>
+                <div className={styles.data}>
+                  <Dropdown
+                    items={quantityList}
+                    name="quantity"
+                    handleChange={handleQuantity}
+                    multiple={false}
+                  />
+                </div>
+              </div>
+            </Grid>
+            <Grid item xs={6}>
+              <div className={styles.width}>
+                <div className={styles.label}>Asset Number</div>
+                <div className={styles.data}>
+                  <Dropdown
+                    items={assetItems}
+                    name="assetNumber"
+                    disabled
+                    multiple={true}
+                  />
+                </div>
+              </div>
+            </Grid>
+            {equipmentError && (
+              <Grid item xs={12}>
+                <span className={styles.error}>{equipmentError}</span>
               </Grid>
-            </DialogContent>
-
-            <DialogActions>
-              {formik.values.currentRecord > -1 && (
-                <Button
-                  onClick={() => onDelete(formik)}
-                  variant="contained"
-                  style={{ backgroundColor: '#f44336', color: 'white' }}
-                  startIcon={<DeleteIcon />}
-                >
-                  Delete
-                </Button>
-              )}
-              <Button
-                onClick={() => onSave({ values, setFieldValue })}
-                variant="contained"
-                color="primary"
-                startIcon={<SaveIcon />}
+            )}
+            <Grid item xs={12}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "end",
+                  alignItems: "center",
+                }}
               >
-                Save
-              </Button>
-            </DialogActions>
-          </>
-        )}
+                <Button
+                  color="secondary"
+                  variant="contained"
+                  onClick={onClose}
+                >
+                  Cancel
+                </Button>
+                {formik.values.currentRecord >= 0 && (
+                  <Button
+                    color="secondary"
+                    variant="contained"
+                    style={{
+                      marginLeft: "20px",
+                    }}
+                    onClick={() => onDelete(formik)}
+                  >
+                    Delete
+                  </Button>
+                )}
+                <Button
+                  color="primary"
+                  variant="contained"
+                  style={{
+                    marginLeft: "20px",
+                  }}
+                  disabled={!formik.values.equipment || !formik.values.quantity}
+                  onClick={() => onSave(formik)}
+                >
+                  Save
+                </Button>
+              </div>
+            </Grid>
+          </Grid>
+        </form>
       </Formik>
-    </Dialog>
+    </ModalPopup>
   );
 };

@@ -60,6 +60,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
   const [showEquipmentDialog, setShowEquipmentDialog] = React.useState(false);
   const [showConfirmation, setShowConfirmation] = React.useState(false);
   const [pendingValues, setPendingValues] = React.useState<any>(null);
+  
   interface IDropdownItem {
     id: string;
     value: string;
@@ -72,7 +73,6 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
   }
 
   const [departmentList, setDepartmentList] = React.useState<IDropdownItem[]>([]);
-  const [departmentSectorMap, setDepartmentSectorMap] = React.useState<{ [key: string]: string }>({});
   const [buildingList, setBuildingList] = React.useState<IDropdownItem[]>([]);
   const [borrowedFromList, setBorrowedFromList] = React.useState<IDropdownItem[]>([]);
   const [timeList, setTimeList] = React.useState<IDropdownItem[]>([]);
@@ -81,19 +81,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
   const [equipmentData, setEquipmentData] = React.useState<IEquipmentData[]>([]);
   const [assetList, setAssetList] = React.useState<string[]>([]);
   const [buildBorrowedMap, setBuildBorrowedMap] = React.useState<any>({});
-  const [buildEquipmentMap, setBuildEquipmentMap] = React.useState<{
-    [key: string]: {
-      [id: number]: {
-        equipment: string;
-        borrowed: string;
-        assetNumber: string;
-        blockedDateAM: string | null;
-        blockedDatePM: string | null;
-        blockedDateWholeDay: string | null;
-      }
-    }
-  }>({}); 
-  const [isFssManaged, setIsFssManaged] = React.useState<boolean>(false);
+  const [buildEquipmentMap, setBuildEquipmentMap] = React.useState<any>({});
   const [files, setFiles] = React.useState<File[]>([]);
   const [notification, setNotification] = React.useState<{
     show: boolean;
@@ -112,20 +100,14 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
       if (isOpen && selectedRequest) {
         try {
           const user = await SharePointService.getCurrentUser();
-          const { departments, departmentSectorMap: deptSectorMap } = await SharePointService.getDepartments(user.Title);
+          const { departments } = await SharePointService.getDepartments(user.Title);
           setDepartmentList(departments);
-          console.log(`Departments: ${departmentList}, Department Sector Map: ${deptSectorMap}`);
-          setDepartmentSectorMap(deptSectorMap);
 
           const equipmentResponse = await SharePointService.getEquipments();
-          console.log('Debug - SharePoint Equipment Response:', equipmentResponse);
-          
-      
           const {
             buildingList: buildings,
             buildBorrowedMap: borrowedMap,
             buildEquipmentMap: equipmentMap,
-            originalEquipmentList
           } = equipmentResponse;
           
           setBuildingList(buildings);
@@ -135,11 +117,9 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
           const times = await SharePointService.getTime();
           setTimeList(times);
 
-          // Set initial values
-          const formik = formikRef.current;
-          if (formik && selectedRequest) {
-            formik.setValues({
-              ...formik.values,
+          if (formikRef.current && selectedRequest) {
+            formikRef.current.setValues({
+              ...formikRef.current.values,
               requestedBy: selectedRequest.requestedBy || "",
               department: selectedRequest.department || "",
               contactNumber: selectedRequest.contactNumber || "",
@@ -150,12 +130,11 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
               status: selectedRequest.status || "",
             });
 
-            // Parse and set equipment data
             if (selectedRequest.equipment) {
               try {
                 const parsedEquipment = JSON.parse(selectedRequest.equipment);
                 if (Array.isArray(parsedEquipment)) {
-                  setEquipmentData(parsedEquipment.map(item => ({
+                  setEquipmentData(parsedEquipment.map((item) => ({
                     equipment: item.equipment || '',
                     quantity: item.quantity || '',
                     assetNumber: Array.isArray(item.assetNumber) ? item.assetNumber : []
@@ -171,46 +150,36 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
               }
             }
 
-            if (selectedRequest.building) {
-              formik.setFieldValue("building", selectedRequest.building);
+            if (selectedRequest.building && borrowedMap) {
+              formikRef.current.setFieldValue("building", selectedRequest.building);
               
-              let borrowedList: any[] = [];
-
-              if (borrowedMap[selectedRequest.building]) {
-                const filteredItems = Array.from(borrowedMap[selectedRequest.building])
-                  .filter((item: any) => !isFssManaged ? item.exclusiveTo !== 'FSS' : true);
-                
-                borrowedList = filteredItems.map((item: any) => ({
-                  id: item.borrowed,
-                  value: item.borrowed
-                }));
+              const buildingBorrowedMap = borrowedMap[selectedRequest.building];
+              if (buildingBorrowedMap) {
+                const borrowedList = Array.from(buildingBorrowedMap)
+                  .map((item: string) => ({
+                    id: item,
+                    value: item
+                  }));
                 
                 setBorrowedFromList(borrowedList);
 
-                const hasMatch = borrowedList.some(item => item.value === selectedRequest.borrowedFrom);
-                if (selectedRequest.borrowedFrom && hasMatch) {
-                  formik.setFieldValue("borrowedFrom", selectedRequest.borrowedFrom);
+                if (selectedRequest.borrowedFrom) {
+                  formikRef.current.setFieldValue("borrowedFrom", selectedRequest.borrowedFrom);
                   
-                  // Get available equipment options from buildEquipmentMap
-                  const key = `${selectedRequest.building}-${selectedRequest.borrowedFrom}`;
-                  const availableEquipment = buildEquipmentMap[key];
+                  const key = selectedRequest.building + "-" + selectedRequest.borrowedFrom;
+                  const availableEquipment = equipmentMap[key];
                   
                   if (availableEquipment) {
-                    // Extract unique equipment names
-                    const uniqueEquipment = [...new Set(
+                    const uniqueEquipment = Array.from(new Set(
                       Object.values(availableEquipment)
-                        .filter(item => item.equipment)
-                        .map(item => item.equipment)
-                    )];
+                        .filter((item: any) => item.equipment)
+                        .map((item: any) => item.equipment)
+                    ));
                     
-                    // Create equipment items for dropdown
-                    const equipmentItems = uniqueEquipment.map(item => ({
+                    setEquipmentList(uniqueEquipment.map((item: string) => ({
                       id: item,
                       value: item
-                    }));
-                    setEquipmentList(equipmentItems);
-                    console.log('Debug - Equipment Items:', equipmentItems);
-                    
+                    })));
                   }
                 }
               }
@@ -230,15 +199,16 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
     init();
   }, [isOpen, selectedRequest]);
 
-  const handleSubmit = async (values: any): Promise<void> => {
-    // Store values and show confirmation dialog
+  const handleSubmit = async (values: any) => {
     setPendingValues(values);
     setShowConfirmation(true);
   };
 
-  const handleConfirm = async (): Promise<void> => {
+  const handleConfirm = async () => {
     try {
-      if (!pendingValues || !selectedRequest) return;
+      if (!pendingValues || !selectedRequest) {
+        return;
+      }
       
       setIsSubmitting(true);
       setShowConfirmation(false);
@@ -273,22 +243,18 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
     }
   };
 
-  const handleBuilding = React.useCallback((e: any) => {
-    const { value } = e.target;
+  const handleBuilding = (e: any) => {
+    const value = e.target.value;
     const formik = formikRef.current;
     const currentBuilding = formik && formik.values ? formik.values.building : undefined;
     
     if (value !== currentBuilding) {
       if (buildBorrowedMap && buildBorrowedMap[value]) {
-        const filteredItems = Array.from(buildBorrowedMap[value])
-          .filter((item: any) => !isFssManaged ? item.exclusiveTo !== 'FSS' : true)
-          .map((item: any) => item.borrowed);
-        
-        const uniqueBorrowed = [...new Set(filteredItems)];
-        const borrowedList = uniqueBorrowed.map(item => ({
-          id: item,
-          value: item
-        }));
+        const borrowedList = Array.from(buildBorrowedMap[value])
+          .map((item: string) => ({
+            id: item,
+            value: item
+          }));
         
         setBorrowedFromList(borrowedList);
       } else {
@@ -303,57 +269,52 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
         formik.setFieldValue("borrowedFrom", "");
       }
     }
-  }, [buildBorrowedMap, isFssManaged]);
+  };
 
-  const handleBorrowedFrom = React.useCallback((e: any) => {
-    const { value } = e.target;
+  const handleBorrowedFrom = (e: any) => {
+    const value = e.target.value;
     const formik = formikRef.current;
-    const currentBuilding = formik && formik.values ? formik.values.building : undefined;
+    const building = formik && formik.values ? formik.values.building : undefined;
     
-    if (currentBuilding && buildBorrowedMap && buildBorrowedMap[currentBuilding]) {
-      // Get available equipment options from buildEquipmentMap
-      const key = `${currentBuilding}-${value}`;
+    if (building && buildBorrowedMap && buildBorrowedMap[building]) {
+      const key = building + "-" + value;
       const availableEquipment = buildEquipmentMap[key];
       
       if (availableEquipment) {
-        // Extract unique equipment names
-        const uniqueEquipment = [...new Set(
+        const uniqueEquipment = Array.from(new Set(
           Object.values(availableEquipment)
-            .filter(item => item.equipment)
-            .map(item => item.equipment)
-        )];
+            .filter((item: any) => item.equipment)
+            .map((item: any) => item.equipment)
+        ));
         
-        // Create equipment items for dropdown
-        const equipmentItems = uniqueEquipment.map(item => ({
+        setEquipmentList(uniqueEquipment.map((item: string) => ({
           id: item,
           value: item
-        }));
-        setEquipmentList(equipmentItems);
-        console.log('Debug - Equipment Items:', equipmentItems);
-        
+        })));
       }
     }
     
     if (formik && formik.setFieldValue) {
       formik.setFieldValue("borrowedFrom", value);
-      // Reset equipment-related values
       formik.setFieldValue("equipment", "");
       formik.setFieldValue("quantity", "");
       formik.setFieldValue("assetNumber", []);
     }
-  }, [buildBorrowedMap, buildEquipmentMap]);
+  };
 
   const handleFileChange = (uploadedFiles: File[]) => {
     setFiles(uploadedFiles);
   };
 
-  if (!selectedRequest) return null;
+  if (!selectedRequest) {
+    return null;
+  }
 
   return (
     <MuiPickersUtilsProvider utils={DateFnsUtils}>
       <ModalPopup 
         open={isOpen} 
-        title={`Equipment Reservation - ${selectedRequest.referenceNumber}`}
+        title={"Equipment Reservation - " + selectedRequest.referenceNumber}
         onClose={onClose}
         maxWidth="lg"
         fullWidth
@@ -374,7 +335,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
               time: "",
               status: "",
               currentRecord: -1,
-              assetNumber: [],
+              assetNumber: []
             }}
             validationSchema={equipmentReservationSchema}
             onSubmit={handleSubmit}
@@ -400,6 +361,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       <Dropdown
                         items={departmentList}
                         name="department"
+                        multiple={false}
                       />
                     </div>
                   </Grid>
@@ -418,6 +380,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                         items={buildingList}
                         name="building"
                         handleChange={handleBuilding}
+                        multiple={false}
                       />
                     </div>
                   </Grid>
@@ -429,6 +392,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                         items={borrowedFromList}
                         name="borrowedFrom"
                         handleChange={handleBorrowedFrom}
+                        multiple={false}
                       />
                     </div>
                   </Grid>
@@ -439,6 +403,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       <Dropdown
                         items={timeList}
                         name="time"
+                        multiple={false}
                         handleChange={(e) => {
                           const formik = formikRef.current;
                           const currentTime = formik && formik.values ? formik.values.time : undefined;
@@ -473,7 +438,9 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       equipmentData={equipmentData}
                       onAdd={() => {
                         const currentFormik = formikRef.current;
-                        if (!currentFormik) return;
+                        if (!currentFormik) {
+                          return;
+                        }
 
                         const building = currentFormik.values.building;
                         const borrowedFrom = currentFormik.values.borrowedFrom;
@@ -487,7 +454,6 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                           return;
                         }
 
-                        // Explicitly set currentRecord to -1 for new equipment
                         currentFormik.setFieldValue("currentRecord", -1);
                         currentFormik.setFieldValue("equipment", "");
                         currentFormik.setFieldValue("quantity", "");
@@ -497,9 +463,10 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       }}
                       onView={(index) => {
                         const currentFormik = formikRef.current;
-                        if (!currentFormik) return;
+                        if (!currentFormik) {
+                          return;
+                        }
 
-                        // Get the existing equipment data first
                         const existingEquipmentData = equipmentData[index];
                         if (!existingEquipmentData) {
                           setNotification({
@@ -510,7 +477,6 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                           return;
                         }
 
-                        // Set the currentRecord first to ensure it's available
                         currentFormik.setFieldValue("currentRecord", index);
                         
                         const building = currentFormik.values.building;
@@ -525,31 +491,25 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                           return;
                         }
 
-                        // Get available equipment options from buildEquipmentMap
-                        const key = `${building}-${borrowedFrom}`;
+                        const key = building + "-" + borrowedFrom;
                         const availableEquipment = buildEquipmentMap[key];
                         
                         if (availableEquipment) {
-                          // Extract unique equipment names
-                          const uniqueEquipment = [...new Set(
+                          const uniqueEquipment = Array.from(new Set(
                             Object.values(availableEquipment)
-                              .filter(item => item.equipment)
-                              .map(item => item.equipment)
-                          )];
+                              .filter((item: any) => item.equipment)
+                              .map((item: any) => item.equipment)
+                          ));
                           
-                          // Create equipment items for dropdown
-                          const equipmentItems = uniqueEquipment.map(item => ({
+                          setEquipmentList(uniqueEquipment.map((item: string) => ({
                             id: item,
                             value: item
-                          }));
-                          setEquipmentList(equipmentItems);
+                          })));
                           
-                          // Set the equipment values
                           currentFormik.setFieldValue("equipment", existingEquipmentData.equipment);
                           currentFormik.setFieldValue("quantity", existingEquipmentData.quantity);
                           currentFormik.setFieldValue("assetNumber", existingEquipmentData.assetNumber);
                           
-                          // Show the dialog
                           setShowEquipmentDialog(true);
                         } else {
                           setNotification({
@@ -581,6 +541,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                           ]
                         }
                         name="status"
+                        multiple={false}
                       />
                     </div>
                   </Grid>
@@ -654,7 +615,9 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
           open={showEquipmentDialog}
           onClose={() => setShowEquipmentDialog(false)}
           onSave={(formik) => {
-            if (!formik || !formik.values) return;
+            if (!formik || !formik.values) {
+              return;
+            }
             
             const newData = {
               equipment: formik.values.equipment,
@@ -680,7 +643,9 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
             }
           }}
           onDelete={(formik) => {
-            if (!formik || !formik.values) return;
+            if (!formik || !formik.values) {
+              return;
+            }
             
             const updatedEquipmentData = equipmentData.filter(
               (_, index) => index !== formik.values.currentRecord
@@ -703,9 +668,9 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
           handleEquipment={(e) => {
             const formik = formikRef.current;
             const value = e.target.value;
-            const currentSelectedEquipments = equipmentData.map(item => item.equipment);
+            const currentSelectedEquipments = equipmentData.map((item) => item.equipment);
 
-            if (currentSelectedEquipments.includes(value) && (formik && formik.values.equipment !== value)) {
+            if (currentSelectedEquipments.indexOf(value) > -1 && (formik && formik.values && formik.values.equipment !== value)) {
               setNotification({
                 show: true,
                 message: "This equipment is already selected, you cannot re-select again.",
@@ -714,7 +679,6 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
               return;
             }
             
-
             if (formik && formik.setFieldValue) {
               formik.setFieldValue("equipment", value);
               formik.setFieldValue("quantity", "");
@@ -735,11 +699,11 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
 
               const building = formik.values.building;
               const borrowedFrom = formik.values.borrowedFrom;
-              const key = `${building}-${borrowedFrom}`;
+              const key = building + "-" + borrowedFrom;
               const equipmentMap = buildEquipmentMap[key];
               
               if (equipmentMap) {
-                const equipment = Object.values(equipmentMap).filter(item => item.equipment === value);
+                const equipment = Object.values(equipmentMap).filter((item: any) => item.equipment === value);
                 const availableEquipment = SharePointService.getAvailableEquipment(
                   equipment,
                   fromDate,
@@ -750,7 +714,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                 if (availableEquipment.length === 0) {
                   setNotification({
                     show: true,
-                    message: `This equipment is not available as ${equipment.length} out of ${equipment.length} in inventory is in use on the date and time selected.`,
+                    message: "This equipment is not available as " + equipment.length + " out of " + equipment.length + " in inventory is in use on the date and time selected.",
                     severity: "error"
                   });
                   return;
@@ -762,11 +726,9 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                 );
 
                 setQuantityList(quantities);
-                const assetNumbers = availableEquipment.map(item => item.assetNumber);
+                const assetNumbers = availableEquipment.map((item: any) => item.assetNumber);
                 setAssetList(assetNumbers);
-                if (formik.setFieldValue) {
-                  formik.setFieldValue("assetNumber", assetNumbers);
-                }
+                formik.setFieldValue("assetNumber", assetNumbers);
               }
             }
           }}
@@ -775,7 +737,6 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
             const value = e.target.value;
             if (formik && formik.setFieldValue) {
               formik.setFieldValue("quantity", value);
-              // Update asset numbers based on quantity
               const currentAssetNumbers = formik.values.assetNumber || [];
               const updatedAssetNumbers = currentAssetNumbers.slice(0, parseInt(value));
               setAssetList(updatedAssetNumbers);
@@ -784,7 +745,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
           }}
         />
       )}
-      {/* Confirmation Dialog */}
+
       <ModalPopup
         open={showConfirmation}
         onClose={() => {
