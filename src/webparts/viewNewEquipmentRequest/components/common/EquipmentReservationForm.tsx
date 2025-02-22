@@ -187,7 +187,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
               contactNumber: selectedRequest.contactNumber || "",
               borrowedFrom: selectedRequest.borrowedFrom || "",
               time: selectedRequest.time || "",
-              status:  "",
+              status: selectedRequest.status || "Release",
               currentRecord: -1,
               assetNumber: selectedRequest.assetNumber || [],
             }), [selectedRequest])}

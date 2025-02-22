@@ -11,7 +11,7 @@ export const equipmentReservationSchema = yup.object().shape({
   time: yup.string().required('Time is Required'),
   status: yup.string()
     .required('Status is Required')
-    .oneOf(['Released', 'Cancelled', 'Returned'], 'Invalid status value'),
+    .oneOf(['Release', 'Cancel', 'Return'], 'Invalid status value'),
   fromDate: yup.date().required('From Date is Required').nullable(),
   toDate: yup.date()
     .required('To Date is Required')
