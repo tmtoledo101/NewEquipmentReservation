@@ -63,7 +63,7 @@ export const useEquipmentReservation = (
       fromDate: selectedRequest.fromDate ? new Date(selectedRequest.fromDate) : null,
       toDate: selectedRequest.toDate ? new Date(selectedRequest.toDate) : null,
       remarks: selectedRequest.remarks || "",
-      status: selectedRequest.status === "For Release" ? "Released" : selectedRequest.status || "",
+      status: selectedRequest.status === "For Release" ? "Release" : selectedRequest.status || "",
       building: selectedRequest.building || "",
       borrowedFrom: selectedRequest.borrowedFrom || "",
       equipment: "",

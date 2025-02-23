@@ -203,14 +203,16 @@ export class SharePointService {
         ToDate: values.toDate,
         Remarks: values.remarks,
         EquipmentData: JSON.stringify(equipmentData),
-        ...(values.status === 'Released' ? {
-          ReleasedBy: currentUser.Title,
-          ReleasedTo: values.department,
-          //ReleasedDate: requestDate
-        } : values.status === 'Returned' ? {
-          ReturnedBy: currentUser.Title,
-          ReturnedTo: values.borrowedFrom,
-          //ReturnedDate: requestDate
+        ...(values.status === 'For Return' ? {
+          ReleasedBy: values.releasedBy || currentUser.Title,
+          ReleasedTo: values.releasedTo,
+          ReleaseRemarks: values.releaseRemarks,
+          //ReleasedDate: moment().format('YYYY/MM/DD')
+        } : values.status === 'Completed' ? {
+          ReturnedBy: values.returnedBy,
+          ReturnedTo: values.returnedTo || values.borrowedFrom,
+          ReturnedRemarks: values.returnRemarks,
+          DateCompleted: moment().format('YYYY/MM/DD')
         } : {})
       };
 
@@ -464,7 +466,8 @@ export class SharePointService {
       releasedTo: item["Released To"],
       releasedBy: item["Released By"],
       releasedDate: item["Released Date"],
-      borrowedFrom: item.BorrowedFrom
+      borrowedFrom: item.BorrowedFrom,
+      remarks: item.Remarks
     }));
   }
 }

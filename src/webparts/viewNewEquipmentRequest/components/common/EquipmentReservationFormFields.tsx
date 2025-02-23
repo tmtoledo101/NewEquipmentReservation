@@ -22,10 +22,10 @@ interface IEquipmentReservationFormFieldsProps {
   formik: any;
 }
 
-const RETURNED_STATUS = [{ id: 'Return', value: 'Return' }];
+const RETURNED_STATUS = [{ id: 'Completed', value: 'Completed' }];
 const REGULAR_STATUS = [
-  { id: 'Release', value: 'Release' },
-  { id: 'Cancel', value: 'Cancel' }
+  { id: 'For Return', value: 'For Return' },
+  { id: 'Cancelled', value: 'Cancelled' }
 ];
 
 const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFieldsProps> = ({
@@ -148,6 +148,67 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           />
         </div>
       </Grid>
+
+      {tabValue === 2 && ( // For Release fields
+        <>
+          <Grid item xs={6}>
+            <div className={styles.width}>
+              <div className={styles.label}>Released To</div>
+              <CustomInput name="releasedTo" />
+            </div>
+          </Grid>
+
+          <Grid item xs={6}>
+            <div className={styles.width}>
+              <div className={styles.label}>Released By</div>
+              <CustomInput name="releasedBy" />
+            </div>
+          </Grid>
+
+          <Grid item xs={12}>
+            <div className={styles.width}>
+              <div className={styles.label}>Release Remarks</div>
+              <CustomInput 
+                name="releaseRemarks" 
+                multiline 
+                rows={4}
+              />
+            </div>
+          </Grid>
+        </>
+      )}
+
+      {tabValue === 3 && ( // For Return fields
+        <>
+          <Grid item xs={6}>
+            <div className={styles.width}>
+              <div className={styles.label}>Returned To</div>
+              <CustomInput 
+                name="returnedTo" 
+                disabled
+              />
+            </div>
+          </Grid>
+
+          <Grid item xs={6}>
+            <div className={styles.width}>
+              <div className={styles.label}>Returned By</div>
+              <CustomInput name="returnedBy" />
+            </div>
+          </Grid>
+
+          <Grid item xs={12}>
+            <div className={styles.width}>
+              <div className={styles.label}>Return Remarks</div>
+              <CustomInput 
+                name="returnRemarks" 
+                multiline 
+                rows={4}
+              />
+            </div>
+          </Grid>
+        </>
+      )}
 
       <Grid item xs={6}>
         <div className={styles.label}>

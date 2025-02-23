@@ -11,13 +11,45 @@ export const equipmentReservationSchema = yup.object().shape({
   time: yup.string().required('Time is Required'),
   status: yup.string()
     .required('Status is Required')
-    .oneOf(['Release', 'Cancel', 'Return'], 'Invalid status value'),
+    .oneOf(['For Return', 'Completed', 'Cancelled'], 'Invalid status value'),
   fromDate: yup.date().required('From Date is Required').nullable(),
   toDate: yup.date()
     .required('To Date is Required')
     .nullable()
     .min(yup.ref('fromDate'), 'End date must be after start date'),
   remarks: yup.string(),
+  // Release fields
+  releasedTo: yup.string().when('status', {
+    is: 'For Return',
+    then: yup.string().required('Released To is Required'),
+    otherwise: yup.string()
+  }),
+  releasedBy: yup.string().when('status', {
+    is: 'For Return',
+    then: yup.string().required('Released By is Required'),
+    otherwise: yup.string()
+  }),
+  releaseRemarks: yup.string().when('status', {
+    is: 'For Return',
+    then: yup.string().required('Release Remarks is Required'),
+    otherwise: yup.string()
+  }),
+  // Return fields
+  returnedTo: yup.string().when('status', {
+    is: 'Completed',
+    then: yup.string().required('Returned To is Required'),
+    otherwise: yup.string()
+  }),
+  returnedBy: yup.string().when('status', {
+    is: 'Completed',
+    then: yup.string().required('Returned By is Required'),
+    otherwise: yup.string()
+  }),
+  returnRemarks: yup.string().when('status', {
+    is: 'Completed',
+    then: yup.string().required('Return Remarks is Required'),
+    otherwise: yup.string()
+  })
 });
 
 export const searchFormValidationSchema = yup.object().shape({

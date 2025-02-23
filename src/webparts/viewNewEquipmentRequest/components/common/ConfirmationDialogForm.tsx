@@ -25,11 +25,11 @@ export const ConfirmationDialogForm: React.FC<IConfirmationDialogFormProps> = ({
       maxWidth="sm"
     >
       <DialogContent>
-        {status === 'Release' ? (
+        {status === 'For Return' ? (
           <p>Are you sure you want to release this request?</p>
-        ) : status === 'Cancel' ? (
+        ) : status === 'Cancelled' ? (
           <p>Are you sure you want to cancel this request?</p>
-        ) : status === 'Return' ? (
+        ) : status === 'Completed' ? (
           <p>Do you want to save changes?</p>
         ) : null}
       </DialogContent>

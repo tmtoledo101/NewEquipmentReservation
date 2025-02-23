@@ -53,10 +53,11 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
 
   private handleViewAction = (event: any, rowData: IEquipmentRequest): void => {
     this.selectedRequest = rowData;
-  if (this.state.tabValue === 0 || this.state.tabValue === 1) {
-  //if (1) {
-    window.open(`${this.props.siteUrl}/SitePages/DisplayEquipmentReservation_appge.aspx?pid=${rowData.ID}`, "_blank");
-    } else {
+    if (this.state.tabValue === 0 || this.state.tabValue === 1) {
+      window.open(`${this.props.siteUrl}/SitePages/DisplayEquipmentReservation_appge.aspx?pid=${rowData.ID}`, "_blank");
+    } else if (this.state.tabValue === 2) { // For Release tab
+      this.setState({ showModal: true });
+    } else if (this.state.tabValue === 3) { // For Return tab
       this.setState({ showModal: true });
     }
   }

@@ -71,10 +71,35 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
     updateEquipmentList
   } = useEquipmentReservation(isOpen, selectedRequest, formikRef);
 
-  const handleSubmit = React.useCallback(async (values: any): Promise<void> => {
-    setPendingValues(values);
-    setShowConfirmation(true);
-  }, [setPendingValues, setShowConfirmation]);
+  const handleSubmit = React.useCallback(async (values: any, formikBag: any): Promise<void> => {
+    // First touch all required fields based on status
+    const requiredFields = ['requestedBy', 'department', 'contactNumber', 'building', 'borrowedFrom', 'time', 'status'];
+    
+    if (values.status === 'For Return') {
+      requiredFields.push('releasedTo', 'releasedBy', 'releaseRemarks');
+    } else if (values.status === 'Completed') {
+      requiredFields.push('returnedTo', 'returnedBy', 'returnRemarks');
+    }
+    
+    // Touch all required fields to ensure their validation messages show
+    requiredFields.forEach(field => {
+      formikBag.setFieldTouched(field, true, false); // false to prevent validation until we call validateForm
+    });
+
+    // Now validate all fields
+    const errors = await formikBag.validateForm();
+    
+    if (Object.keys(errors).length === 0) {
+      setPendingValues(values);
+      setShowConfirmation(true);
+    } else {
+      setNotification({
+        show: true,
+        message: "Please fill in all required fields",
+        severity: "error"
+      });
+    }
+  }, [setPendingValues, setShowConfirmation, setNotification]);
 
   const handleConfirm = React.useCallback(async (): Promise<void> => {
     try {
@@ -187,7 +212,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
               contactNumber: selectedRequest.contactNumber || "",
               borrowedFrom: selectedRequest.borrowedFrom || "",
               time: selectedRequest.time || "",
-              status: selectedRequest.status || "Release",
+              status: selectedRequest.status || "For Return",
               currentRecord: -1,
               assetNumber: selectedRequest.assetNumber || [],
             }), [selectedRequest])}
