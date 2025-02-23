@@ -20,13 +20,21 @@ interface IEquipmentReservationFormFieldsProps {
   onAddEquipment: () => void;
   onViewEquipment: (index: number) => void;
   formik: any;
+  isForReturn?: boolean;
 }
 
-const RETURNED_STATUS = [{ id: 'Completed', value: 'Completed' }];
-const REGULAR_STATUS = [
-  { id: 'For Return', value: 'For Return' },
-  { id: 'Cancelled', value: 'Cancelled' }
-];
+const getStatusOptions = (tabValue: number, currentStatus: string) => {
+  if (tabValue === 3) { // For Return tab
+    return [{ id: 'Completed', value: 'Completed' }];
+  }
+  if (currentStatus === 'For Return') {
+    return [{ id: 'Completed', value: 'Completed' }];
+  }
+  return [
+    { id: 'For Return', value: 'For Return' },
+    { id: 'Cancelled', value: 'Cancelled' }
+  ];
+};
 
 const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFieldsProps> = ({
   departmentList,
@@ -41,8 +49,20 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
   handleFileChange,
   onAddEquipment,
   onViewEquipment,
-  formik
+  formik,
+  isForReturn = false
 }: IEquipmentReservationFormFieldsProps) => {
+const currentStatus = (formik && formik.values && formik.values.status) ? formik.values.status : '';
+  console.log('currentStatus:', currentStatus);
+  // Keep track of whether we started in "For Return" status
+  const startedAsForReturn = (isForReturn || currentStatus === 'For Return') ||  (isForReturn || currentStatus === 'Completed');
+  console.log('startedAsForReturn', startedAsForReturn);
+  //Fields should stay disabled if we started as "For Return", regardless of current status
+  const isDisabled = startedAsForReturn;
+  console.log('isDisabled', startedAsForReturn);
+  const showReturnFields = startedAsForReturn;
+  // Return fields are enabled only when moving to Completed
+  const canEditReturnFields = startedAsForReturn && currentStatus === 'Completed';
   return (
     <Grid container spacing={4}>
       <Grid item xs={12}>
@@ -52,7 +72,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
       <Grid item xs={6}>
         <div className={styles.width}>
           <div className={styles.label}>Requested By</div>
-          <CustomInput name="requestedBy" disabled />
+          <CustomInput name="requestedBy" disabled={true} />
         </div>
       </Grid>
 
@@ -62,6 +82,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           <Dropdown
             items={departmentList}
             name="department"
+            disabled={isDisabled}
           />
         </div>
       </Grid>
@@ -69,7 +90,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
       <Grid item xs={6}>
         <div className={styles.width}>
           <div className={styles.label}>Contact No.</div>
-          <CustomInput name="contactNumber" />
+          <CustomInput name="contactNumber" disabled={isDisabled} />
         </div>
       </Grid>
 
@@ -80,6 +101,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
             items={buildingList}
             name="building"
             handleChange={handleBuilding}
+            disabled={isDisabled}
           />
         </div>
       </Grid>
@@ -91,6 +113,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
             items={borrowedFromList}
             name="borrowedFrom"
             handleChange={handleBorrowedFrom}
+            disabled={isDisabled}
           />
         </div>
       </Grid>
@@ -102,6 +125,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
             items={timeList}
             name="time"
             handleChange={handleTimeChange}
+            disabled={isDisabled}
           />
         </div>
       </Grid>
@@ -111,6 +135,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           <div className={styles.label}>Date of use - From</div>
           <CustomDateTimePicker
             name="fromDate"
+            disabled={isDisabled}
           />
         </div>
       </Grid>
@@ -120,6 +145,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           <div className={styles.label}>Date of use - To</div>
           <CustomDateTimePicker
             name="toDate"
+            disabled={isDisabled}
           />
         </div>
       </Grid>
@@ -129,13 +155,14 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           equipmentData={equipmentData}
           onAdd={onAddEquipment}
           onView={onViewEquipment}
+          disabled={isDisabled}
         />
       </Grid>
 
       <Grid item xs={12}>
         <div className={styles.width}>
           <div className={styles.label}>Remarks</div>
-          <CustomInput name="remarks" />
+          <CustomInput name="remarks" disabled={isDisabled} />
         </div>
       </Grid>
 
@@ -143,7 +170,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
         <div className={styles.width}>
           <div className={styles.label}>Status</div>
           <Dropdown
-            items={tabValue === 3 ? RETURNED_STATUS : REGULAR_STATUS}
+            items={getStatusOptions(tabValue, currentStatus)}
             name="status"
           />
         </div>
@@ -178,14 +205,14 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
         </>
       )}
 
-      {tabValue === 3 && ( // For Return fields
+      {(tabValue === 3 || showReturnFields) && ( // For Return fields
         <>
           <Grid item xs={6}>
             <div className={styles.width}>
               <div className={styles.label}>Returned To</div>
               <CustomInput 
                 name="returnedTo" 
-                disabled
+          disabled={!canEditReturnFields}
               />
             </div>
           </Grid>
@@ -193,7 +220,10 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           <Grid item xs={6}>
             <div className={styles.width}>
               <div className={styles.label}>Returned By</div>
-              <CustomInput name="returnedBy" />
+              <CustomInput 
+                name="returnedBy"
+                disabled={!canEditReturnFields}
+              />
             </div>
           </Grid>
 
@@ -204,6 +234,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
                 name="returnRemarks" 
                 multiline 
                 rows={4}
+                disabled={!canEditReturnFields}
               />
             </div>
           </Grid>
@@ -228,10 +259,11 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           previewChipProps={{
             classes: { root: styles.previewChip },
           }}
-          dropzoneText="Drag and drop files here or click"
+          dropzoneText={isDisabled ? "File uploads are disabled when status is 'For Return'" : "Drag and drop files here or click"}
           previewText="Selected files"
           maxFileSize={50000000}
-          onChange={handleFileChange}
+          onChange={isDisabled ? undefined : handleFileChange}
+          acceptedFiles={isDisabled ? [] : undefined}
         />
       </Grid>
     </Grid>

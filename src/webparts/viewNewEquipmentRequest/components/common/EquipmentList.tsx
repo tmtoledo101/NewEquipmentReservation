@@ -14,12 +14,14 @@ interface IEquipmentListProps {
   equipmentData: IEquipmentData[];
   onAdd: () => void;
   onView: (index: number) => void;
+  disabled?: boolean;
 }
 
 export const EquipmentList: React.FC<IEquipmentListProps> = ({
   equipmentData,
   onAdd,
-  onView
+  onView,
+  disabled = false
 }) => {
   return (
     <div className={styles.viewNewEquipmentRequest}>
@@ -30,6 +32,7 @@ export const EquipmentList: React.FC<IEquipmentListProps> = ({
           aria-label="add"
           size="small"
           onClick={onAdd}
+          disabled={disabled}
         >
           <AddIcon />
         </Fab>
@@ -49,7 +52,13 @@ export const EquipmentList: React.FC<IEquipmentListProps> = ({
               {equipmentData.map((item, index) => (
                 <tr key={index}>
                   <td>
-                    <div onClick={() => onView(index)}>
+                    <div 
+                      onClick={() => onView(index)}
+                      style={{ 
+                        cursor: disabled ? 'default' : 'pointer',
+                        opacity: disabled ? 0.5 : 1 
+                      }}
+                    >
                       <VisibilityIcon />
                     </div>
                   </td>
