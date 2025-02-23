@@ -70,7 +70,9 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
     console.log(`GetItemdepartment:`,department, `departmentlenght`,department.length);
     if (department.length === 0) {
       const currentUser = await SharePointService.getCurrentUser();
-      const { departments, departmentSectorMap } = await SharePointService.getDepartments(currentUser.Title);
+      console.log(`currentUser.Email`, currentUser.Email);
+      const { departments, departmentSectorMap } = await SharePointService.getDepartments(currentUser.Email);
+      
       console.log(`Viewdepartments:`,departments);
       department = departments.map(dept => dept.value);
       this.setState({ department, departmentSectorMap });
@@ -109,9 +111,9 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
     const currentUser = await SharePointService.getCurrentUser();
     const { ownerEmails, departmentsByOwner } = await SharePointService.getEquipmentOwners();
     console.log(`OwnerEmails:`,ownerEmails);
-    console.log(`currentUserEmail:`,currentUser.Title);
-    if (ownerEmails.includes(currentUser.Title)) {
-      const departments = departmentsByOwner[currentUser.Title];
+    console.log(`currentUserEmail:`,currentUser.Email);
+    if (ownerEmails.includes(currentUser.Email)) {
+      const departments = departmentsByOwner[currentUser.Email];
       this.setState({
         menuTabs: ["By Reference No", "Past Request", "For Release", "For Return"],
         department: departments,

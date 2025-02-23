@@ -24,7 +24,7 @@ export class SharePointService {
     let allDepartmentData: any[] = [];
     
     // Initial page request
-    const employeeEmailTitle = isDevelopmentMode()? "EmployeeName/Title":"EmployeeName/EMail";
+    const employeeEmailTitle =isDevelopmentMode()? "EmployeeName/Title":"EmployeeName/EMail";
     let page = await sp.web.lists
       .getByTitle("EquipUsersPerDepartment")
       .items.select(
@@ -32,7 +32,7 @@ export class SharePointService {
         "Department/Department",
         "Department/Sector"
       )
-      .filter(`EmployeeName/Title eq '${email}'`)
+      .filter(`${employeeEmailTitle} eq '${email}'`)
       .expand(
         "Department/FieldValuesAsText",
         employeeEmailTitle

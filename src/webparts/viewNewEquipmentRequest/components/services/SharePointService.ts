@@ -6,6 +6,7 @@ import * as moment from "moment";
 import { IEquipmentRequest } from "../interfaces/IEquipmentRequest";
 import { dateConverter, arrayToDropDownValues } from "../utils/helpers";
 import  {isDevelopmentMode } from "../../../../shared/utils/enivronmentHelper";
+import { configService } from "../../../../shared/services/ConfigurationService";
 export interface IFacilityMapItem {
   Quantity: number;
   AssetNumber?: string;
@@ -237,12 +238,13 @@ export class SharePointService {
 
   public static async getCurrentUser() {
     const user = await sp.web.currentUser.get();
-
-    const currentUser = {
+    
+    const currentUserProp = {
       Email: isDevelopmentMode()? user.Title : user.Email,
       Title: user.Title
     };
-    return currentUser;
+    console.log("currentUserprop",currentUserProp.Email);
+    return currentUserProp;
   }
 
   public static async getDepartments(email: string): Promise<{
@@ -253,8 +255,10 @@ export class SharePointService {
     
     // Initial page request
     const  employeeTitleEmail = isDevelopmentMode()? "EmployeeName/Title":"EmployeeName/EMail";
+    console.log("employeeTitleEmail:", employeeTitleEmail,
+      "Email:" ,email
+    );
     let page = await sp.web.lists
-   
       .getByTitle("EquipUsersPerDepartment")
       .items.select(
         employeeTitleEmail,
@@ -275,6 +279,7 @@ export class SharePointService {
     // Get subsequent pages if they exist
     while (page.hasNext) {
       page = await page.getNext();
+      console.log(`Total departments retrieved(page):`, allDepartmentData.length);
       allDepartmentData = [...allDepartmentData, ...page.results];
     }
 
@@ -301,15 +306,16 @@ export class SharePointService {
     try {
       let allEquipmentList: any[] = [];
       
+      const equipmentTitleEmail = isDevelopmentMode()? "EquipmentOwner/Title" : "EquipmentOwner/EMail";
       // Initial page request
       let page = await sp.web.lists
         .getByTitle("EquipmentOwner")
         .items.select(
           "Department/Department",
-          "EquipmentOwner/Title"
+          equipmentTitleEmail
         )
         .expand(
-          "EquipmentOwner/Title",
+          equipmentTitleEmail,
           "Department/FieldValuesAsText"
         )
         .top(1000)  // Process 100 items at a time
@@ -325,15 +331,14 @@ export class SharePointService {
       }
   
       console.log(`Total equipment owners retrieved:`, allEquipmentList.length);
-  
-      const ownerEmails = allEquipmentList.map(item => item.EquipmentOwner.Title);
+      const ownerEmails = allEquipmentList.map(item => isDevelopmentMode()? item.EquipmentOwner.Title: item.EquipmentOwner.EMail);
       const departmentsByOwner = {};
       
       allEquipmentList.forEach(item => {
-        if (!departmentsByOwner[item.EquipmentOwner.Title]) {
-          departmentsByOwner[item.EquipmentOwner.Title] = [];
+        if (!departmentsByOwner[isDevelopmentMode()? item.EquipmentOwner.Title: item.EquipmentOwner.EMail]) {
+          departmentsByOwner[isDevelopmentMode()? item.EquipmentOwner.Title: item.EquipmentOwner.EMail] = [];
         }
-        departmentsByOwner[item.EquipmentOwner.Title].push(item.Department.Department);
+        departmentsByOwner[isDevelopmentMode()? item.EquipmentOwner.Title: item.EquipmentOwner.EMail].push(item.Department.Department);
       });
   
       return {
@@ -407,10 +412,10 @@ export class SharePointService {
   }
 
   public static async getEquipmentRequests(from: Date, to: Date, departments: string[], filterColumn: string = 'Department'): Promise<IEquipmentRequest[]> {
-    const fromDateStr = moment(from).startOf('day').utc().format("YYYY-MM-DD[T]00:00:00[Z]");
-    const toDateStr = moment(to).endOf('day').utc().format("YYYY-MM-DD[T]23:59:59[Z]");
+   // const fromDateStr = moment(from).startOf('day').utc().format("YYYY-MM-DD[T]00:00:00[Z]");
+    //const toDateStr =   moment(to).endOf('day').utc().format("YYYY-MM-DD[T]23:59:59[Z]");
     
-    const dateRange = `(FromDate le datetime'${toDateStr}' and ToDate ge datetime'${fromDateStr}')`;
+    const dateRange = `(FromDate ge datetime'${dateConverter(from,1)}' and ToDate le datetime'${dateConverter(from,2)}')`;
     console.log(`departments:`,departments);
     let filterQuery = dateRange;
     if (departments && departments.length > 0) {

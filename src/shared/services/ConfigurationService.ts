@@ -2,10 +2,10 @@ import { sp } from "@pnp/sp";
 import "@pnp/sp/webs";
 import "@pnp/sp/lists";
 import "@pnp/sp/items";
-
+import  {isDevelopmentMode } from "../utils/enivronmentHelper";
 export class ConfigurationService {
   private static instance: ConfigurationService;
-  private environment: string = "prd"; //test || prd
+  private environment: string = "test"; //test || prd
   private user : string = "dev"; //dev || bsp
   
   public readonly TEST_URL = "https://s5b36.sharepoint.com";
@@ -24,6 +24,7 @@ export class ConfigurationService {
     console.log("Base URL:", this.getBaseUrl());
     console.log("Access Control URL:", this.getAccessControlUrl());
     console.log("Resource Reservation URL:", this.getResourceReservationUrl());
+    console.log("IsDevelopmentEnvironment:", isDevelopmentMode());
   }
 
   public static getInstance(): ConfigurationService {

@@ -91,7 +91,7 @@ export const useEquipmentReservation = (
           equipmentResponse,
           timesResponse
         ] = await Promise.all([
-          SharePointService.getDepartments(user.Title),
+          SharePointService.getDepartments(user.Email),
           SharePointService.getEquipments(),
           SharePointService.getTime()
         ]);
