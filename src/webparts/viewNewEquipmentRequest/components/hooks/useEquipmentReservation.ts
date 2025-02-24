@@ -55,7 +55,8 @@ export const useEquipmentReservation = (
   const initialFormValues = React.useMemo(() => {
     if (!selectedRequest) return null;
     
-    return {
+    console.log('Creating initial form values from selectedRequest:', selectedRequest);
+    const values = {
       requestedBy: selectedRequest.requestedBy || "",
       department: selectedRequest.department || "",
       contactNumber: selectedRequest.contactNumber || "",
@@ -70,7 +71,10 @@ export const useEquipmentReservation = (
       quantity: "",
       currentRecord: -1,
       assetNumber: [],
+      GUID: selectedRequest.GUID || "",  // Add GUID to initial form values
     };
+    console.log('Created initial form values:', values);
+    return values;
   }, [selectedRequest]);
 
   // Load initial data when form opens
@@ -113,7 +117,9 @@ export const useEquipmentReservation = (
           formik.resetForm();
           
           // Set form values
+          console.log('Setting formik values:', initialFormValues);
           formik.setValues(initialFormValues);
+          console.log('Formik values after set:', formik.values);
 
           // Initialize borrowedFromList based on selected building
           if (initialFormValues.building && buildBorrowedMap && buildBorrowedMap[initialFormValues.building]) {

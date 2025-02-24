@@ -1,11 +1,13 @@
 import * as React from 'react';
-import { Grid } from "@material-ui/core";
+import { Grid, Chip, CircularProgress } from "@material-ui/core";
+import AttachFileIcon from "@material-ui/icons/AttachFile";
 import { CustomInput, CustomDateTimePicker, Dropdown } from './FormComponents';
 import { EquipmentList } from './EquipmentList';
 import { DropzoneArea } from "material-ui-dropzone";
 import { IDropdownItem, IEquipmentData } from '../utils/helpers';
 import styles from './EquipmentReservationForm.module.scss';
 import { configService } from '../../../../shared/services/ConfigurationService';
+import { Notification } from './Notification';
 
 interface IEquipmentReservationFormFieldsProps {
   departmentList: IDropdownItem[];
@@ -23,6 +25,7 @@ interface IEquipmentReservationFormFieldsProps {
   formik: any;
   isForReturnProp?: boolean;
   existingFiles?: string[]; // Add prop for existing files
+  siteUrl: string; // Add siteUrl prop for file downloads
 }
 
 const getStatusOptions = (currentStatus: string, tabValue: number) => {
@@ -50,16 +53,99 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
   onViewEquipment,
   formik,
   isForReturnProp = false,
-  existingFiles = []
+  existingFiles = [],
+  siteUrl
 }: IEquipmentReservationFormFieldsProps) => {
   const currentStatus = (formik && formik.values && formik.values.status) ? formik.values.status : '';
   
-  // Fields should be disabled only in Return tab
-  const isDisabled = tabValue === 3;
+  // Disable logic based on tab:
+  // - For Release (2): Only files are disabled
+  // - For Return (3): Only equipment list is disabled
+  const isFilesDisabled = tabValue === 2;  // Files are read-only in For Release tab
+  const isEquipmentDisabled = tabValue === 3;  // Equipment list is disabled in For Return tab
   
   // Show and enable return fields only in Return tab
   const showReturnFields = tabValue === 3;
   const canEditReturnFields = tabValue === 3;
+
+  // State for loading indicators and notifications
+  const [loading, setLoading] = React.useState<{[key: string]: boolean}>({});
+  const [notification, setNotification] = React.useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    open: false,
+    message: '',
+    severity: 'error'
+  });
+
+  // Log when component renders
+  React.useEffect(() => {
+    console.log(
+        'EquipmentReservationFormFields rendered with formik values:',
+        formik && formik.values ? formik.values : {}
+    );
+}, [formik && formik.values ? JSON.stringify(formik.values) : undefined]);
+
+
+  // Handle file download
+  const handleFileDownload = async (fileName: string) => {
+    setLoading(prev => ({ ...prev, [fileName]: true }));
+    try {
+      // Log all relevant information for debugging
+      console.log('Attempting to download file:', {
+        fileName,
+        formikValues: formik.values,
+        GUID: formik.values.GUID,
+        siteUrl,
+        fullPath: `${siteUrl}/NewEquipmentRequestDocs/${formik.values.GUID}/${fileName}`,
+        tabValue,
+        isFilesDisabled
+      });
+      
+      // Get GUID from formik values
+      const guid = formik.values.GUID;
+      if (!guid) {
+        console.error('GUID not found in formik values:', formik.values);
+        console.error('Please check SharePointService.getEquipmentRequests response');
+        setNotification({
+          open: true,
+          message: 'Unable to download file. Document ID not found.',
+          severity: 'error'
+        });
+        return;
+      }
+
+      // Construct the full URL
+      const fileUrl = `${siteUrl}/NewEquipmentRequestDocs/${guid}/${encodeURIComponent(fileName)}`;
+      
+      // Create a hidden anchor element
+      const link = document.createElement("a");
+      link.style.display = 'none';
+      link.href = fileUrl;
+      link.download = fileName;
+      
+      // Add to document, click, and remove
+      document.body.appendChild(link);
+      try {
+        link.click();
+      } catch (error) {
+        console.error('Error downloading file:', error);
+        setNotification({
+          open: true,
+          message: 'Error downloading file. Opening in new tab instead.',
+          severity: 'error'
+        });
+        // Fallback - open in new tab
+        window.open(fileUrl, '_blank');
+      } finally {
+        document.body.removeChild(link);
+      }
+    } finally {
+      setLoading(prev => ({ ...prev, [fileName]: false }));
+    }
+  };
 
   return (
     <Grid container spacing={4}>
@@ -80,7 +166,6 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           <Dropdown
             items={departmentList}
             name="department"
-            disabled={isDisabled}
           />
         </div>
       </Grid>
@@ -88,7 +173,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
       <Grid item xs={6}>
         <div className={styles.width}>
           <div className={styles.label}>Contact No.</div>
-          <CustomInput name="contactNumber" disabled={isDisabled} />
+          <CustomInput name="contactNumber" />
         </div>
       </Grid>
 
@@ -99,7 +184,6 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
             items={buildingList}
             name="building"
             handleChange={handleBuilding}
-            disabled={isDisabled}
           />
         </div>
       </Grid>
@@ -111,7 +195,6 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
             items={borrowedFromList}
             name="borrowedFrom"
             handleChange={handleBorrowedFrom}
-            disabled={isDisabled}
           />
         </div>
       </Grid>
@@ -123,7 +206,6 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
             items={timeList}
             name="time"
             handleChange={handleTimeChange}
-            disabled={isDisabled}
           />
         </div>
       </Grid>
@@ -133,7 +215,6 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           <div className={styles.label}>Date of use - From</div>
           <CustomDateTimePicker
             name="fromDate"
-            disabled={isDisabled}
           />
         </div>
       </Grid>
@@ -143,7 +224,6 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           <div className={styles.label}>Date of use - To</div>
           <CustomDateTimePicker
             name="toDate"
-            disabled={isDisabled}
           />
         </div>
       </Grid>
@@ -153,14 +233,14 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           equipmentData={equipmentData}
           onAdd={onAddEquipment}
           onView={onViewEquipment}
-          disabled={isDisabled}
+          disabled={isEquipmentDisabled}  // Only disabled in For Return tab
         />
       </Grid>
 
       <Grid item xs={12}>
         <div className={styles.width}>
           <div className={styles.label}>Remarks</div>
-          <CustomInput name="remarks" disabled={isDisabled} />
+          <CustomInput name="remarks" />
         </div>
       </Grid>
 
@@ -246,42 +326,74 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
       </Grid>
 
       <Grid item xs={12}>
-        {isDisabled ? (
-          // If disabled, show existing files as links
+        {isFilesDisabled ? (
+          // For Release tab: Show only chips
           <div>
-            {existingFiles && existingFiles.map((fileName, index) => (
-              <a 
-                key={index}
-                href={`${window.location.origin}${configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation"}/NewEquipmentRequestDocs/${formik.values.GUID}/${fileName}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ margin: '0 8px', textDecoration: 'underline', color: '#0078d4' }}
-              >
-                {fileName}
-              </a>
+            {existingFiles && existingFiles.map((fileName) => (
+              <Chip
+                key={fileName}
+                label={fileName}
+                icon={loading[fileName] ? <CircularProgress size={16} /> : <AttachFileIcon />}
+                style={{
+                  margin: "5px",
+                  height: "32px",
+                  cursor: loading[fileName] ? "default" : "pointer",
+                  padding: "0 10px",
+                  opacity: loading[fileName] ? 0.7 : 1
+                }}
+                clickable={!loading[fileName]}
+                onClick={() => !loading[fileName] && handleFileDownload(fileName)}
+              />
             ))}
           </div>
         ) : (
-          // If not disabled, show DropzoneArea with existing files
-          <DropzoneArea
-            showPreviews={true}
-            showPreviewsInDropzone={false}
-            useChipsForPreview
-            dropzoneClass={styles.dropZone}
-            previewGridProps={{
-              container: { spacing: 1, direction: "row" },
-            }}
-            previewChipProps={{
-              classes: { root: styles.previewChip },
-            }}
-            dropzoneText="Drag and drop files here or click"
-            previewText="Selected files"
-            maxFileSize={50000000}
-            onChange={handleFileChange}
-            initialFiles={existingFiles || []}
-          />
+          // For Return tab: Show DropzoneArea first, then chips below
+          <>
+            <DropzoneArea
+              showPreviews={true}
+              showPreviewsInDropzone={false}
+              useChipsForPreview
+              dropzoneClass={styles.dropZone}
+              previewGridProps={{
+                container: { spacing: 1, direction: "row" },
+              }}
+              previewChipProps={{
+                classes: { root: styles.previewChip },
+              }}
+              dropzoneText="Drag and drop files here or click"
+              previewText="Selected files"
+              maxFileSize={50000000}
+              onChange={handleFileChange}
+              initialFiles={[]}  // Don't show existing files in DropzoneArea since we show them as chips
+            />
+            <div style={{ marginTop: '20px' }}>
+              {existingFiles && existingFiles.map((fileName) => (
+                <Chip
+                  key={fileName}
+                  label={fileName}
+                  icon={loading[fileName] ? <CircularProgress size={16} /> : <AttachFileIcon />}
+                  style={{
+                    margin: "5px",
+                    height: "32px",
+                    cursor: loading[fileName] ? "default" : "pointer",
+                    padding: "0 10px",
+                    opacity: loading[fileName] ? 0.7 : 1
+                  }}
+                  clickable={!loading[fileName]}
+                  onClick={() => !loading[fileName] && handleFileDownload(fileName)}
+                />
+              ))}
+            </div>
+          </>
         )}
       </Grid>
+
+      <Notification
+        open={notification.open}
+        message={notification.message}
+        severity={notification.severity}
+        onClose={() => setNotification({ open: false, message: '', severity: 'error' })}
+      />
     </Grid>
   );
 };

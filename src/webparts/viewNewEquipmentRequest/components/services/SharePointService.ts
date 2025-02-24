@@ -224,17 +224,21 @@ export class SharePointService {
       // Handle file attachments if any
       if (files && files.length > 0) {
         // Get the request's GUID
+        
         const request = await sp.web.lists
           .getByTitle("NewEquipmentRequestList")
           .items.getById(id)
           .select("GUID")
           .get();
+          
 
         // Upload files to document library
         const docLibrary = "NewEquipmentRequestDocs";
         const environment = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation";
         const folderPath = environment + "/" + docLibrary + "/" + request.GUID;
 
+        console.log('Guid:', request.GUID);
+        await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.getByName(request.GUID).delete();
         // Create folder if it doesn't exist
         await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.add(request.GUID);
 
@@ -489,7 +493,29 @@ export class SharePointService {
     // Initial page request
     let page = await sp.web.lists
       .getByTitle("NewEquipmentRequestList")
-      .items.select("*")
+      .items.select(
+        "Building",
+        "FromDate",
+        "ToDate",
+        "ReferenceNumber",
+        "RequestedBy",
+        "Department",
+        "ContactNumber",
+        "Status",
+        "Time",
+        "EquipmentData",
+        "Id",
+        "ReturnedBy",
+        "ReturnedTo",
+        "ReturnedRemarks",
+        "ReleasedTo",
+        "ReleasedBy",
+        "ReleaseRemarks",
+        "DateCompleted",
+        "BorrowedFrom",
+        "Remarks",
+        "GUID"  // Explicitly select GUID field
+      )
       .filter(filterQuery)
       .orderBy("Id", false)
       .top(100)  // Process 100 items at a time
@@ -519,10 +545,11 @@ export class SharePointService {
       ID: item.Id,
       returnedBy: item["Returned By"],
       returnedTo: item["Returned To"],
-      returnedDate: item["Returned Date"],
+      returnedRemarks: item["Returned Remarks"],
       releasedTo: item["Released To"],
       releasedBy: item["Released By"],
-      releasedDate: item["Released Date"],
+      releaseRemarks: item["Release Remarks"],
+      dateCompleted: item["Date Completed"],
       borrowedFrom: item.BorrowedFrom,
       remarks: item.Remarks,
       GUID: item.GUID

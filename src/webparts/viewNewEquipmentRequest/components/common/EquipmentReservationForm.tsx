@@ -241,6 +241,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                   }, [setEquipmentData])}
                   handleFileChange={setFiles}
                   existingFiles={selectedRequest && selectedRequest.attachments}
+                  siteUrl={siteUrl}
                   onAddEquipment={React.useCallback(() => {
                     const currentFormik = formikRef.current;
                     if (!currentFormik) return;

@@ -685,7 +685,7 @@ export default class DisplayNewEquipmentRequest extends React.Component<
                       existingFiles={Files}
                       onFileChange={this.handleFileChange}
                       onFileDownload={this.handleFileDownload}
-                      disabled={!isEdit}
+                      disabled={requestStatus === "For Release" || !isEdit}
                     />
                   </Grid>
 
