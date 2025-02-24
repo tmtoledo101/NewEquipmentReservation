@@ -2,7 +2,7 @@ import * as React from 'react';
 import styles from './ViewNewEquipmentRequest.module.scss';
 import { IViewNewEquipmentRequestProps } from './IViewNewEquipmentRequestProps';
 import { IViewNewEquipmentRequestState } from './IViewNewEquipmentRequestState';
-import { Grid, Paper, AppBar, Tabs, Tab, Button } from "@material-ui/core";
+import { Grid, Paper, AppBar, Tabs, Tab, Button, CircularProgress } from "@material-ui/core";
 import CloseIcon from "@material-ui/icons/Close";
 import { SharePointService } from './services/SharePointService';
 import { SearchForm } from './common/SearchForm';
@@ -26,7 +26,8 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
       returnRequestList: [],
       department: [],
       departmentSectorMap: {},
-      showModal: false
+      showModal: false,
+      isLoading: false
     };
   }
 
@@ -47,8 +48,13 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
 
   private handleSearch = async (fromDate: Date, toDate: Date): Promise<void> => {
     const filterColumn = this.state.department.length > 0 ? "BorrowedFrom" : "Department";
-    console.log('handlesearch');  
-    await this.getItems(fromDate, toDate, filterColumn);
+    console.log('handlesearch');
+    this.setState({ isLoading: true });
+    try {
+      await this.getItems(fromDate, toDate, filterColumn);
+    } finally {
+      this.setState({ isLoading: false });
+    }
   }
 
   private handleViewAction = (event: any, rowData: IEquipmentRequest): void => {
@@ -109,16 +115,21 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
   }
 
   public async componentDidMount(): Promise<void> {
-    const currentUser = await SharePointService.getCurrentUser();
-    const { ownerEmails, departmentsByOwner } = await SharePointService.getEquipmentOwners();
+    this.setState({ isLoading: true });
+    try {
+      const currentUser = await SharePointService.getCurrentUser();
+      const { ownerEmails, departmentsByOwner } = await SharePointService.getEquipmentOwners();
     console.log(`OwnerEmails:`,ownerEmails);
     console.log(`currentUserEmail:`,currentUser.Email);
-    if (ownerEmails.includes(currentUser.Email)) {
-      const departments = departmentsByOwner[currentUser.Email];
-      this.setState({
-        menuTabs: ["By Reference No", "Past Request", "For Release", "For Return"],
-        department: departments,
-      });
+      if (ownerEmails.includes(currentUser.Email)) {
+        const departments = departmentsByOwner[currentUser.Email];
+        this.setState({
+          menuTabs: ["By Reference No", "Past Request", "For Release", "For Return"],
+          department: departments,
+        });
+      }
+    } finally {
+      this.setState({ isLoading: false });
     }
   }
 
@@ -157,12 +168,18 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
 
           <Grid item xs={12}>
             <Paper variant="outlined" className={styles.paper}>
-              <EquipmentTable
-                title={headerObj[tabValue.toString()]}
-                data={this.getData()}
-                tabValue={tabValue}
-                onViewClick={this.handleViewAction}
-              />
+              {this.state.isLoading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+                  <CircularProgress />
+                </div>
+              ) : (
+                <EquipmentTable
+                  title={headerObj[tabValue.toString()]}
+                  data={this.getData()}
+                  tabValue={tabValue}
+                  onViewClick={this.handleViewAction}
+                />
+              )}
             </Paper>
           </Grid>
 

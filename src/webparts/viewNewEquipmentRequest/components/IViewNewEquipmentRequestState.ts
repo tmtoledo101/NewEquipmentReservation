@@ -10,4 +10,5 @@ export interface IViewNewEquipmentRequestState {
   returnRequestList: IEquipmentRequest[];
   department: string[];
   departmentSectorMap: { [key: string]: string };
+  isLoading: boolean;
 }

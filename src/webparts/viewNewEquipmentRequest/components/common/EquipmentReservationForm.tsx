@@ -7,7 +7,8 @@ import {
   DialogActions,
   Button,
   CircularProgress,
-  Snackbar
+  Snackbar,
+  Box
 } from "@material-ui/core";
 import { Alert } from "@material-ui/lab";
 import CloseIcon from "@material-ui/icons/Close";
@@ -199,7 +200,12 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
         fullWidth
       >
         <DialogContent>
-          <Formik
+          {isSubmitting ? (
+            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "400px" }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Formik
             initialValues={React.useMemo(() => ({
               requestedBy: selectedRequest.requestedBy || "",
               department: selectedRequest.department || "",
@@ -346,8 +352,9 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                 </DialogActions>
               </form>
             )}
-          </Formik>
-        </DialogContent>
+            </Formik>
+          )}
+          </DialogContent>
       </ModalPopup>
 
       <Snackbar

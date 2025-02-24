@@ -53,13 +53,10 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
   isForReturn = false
 }: IEquipmentReservationFormFieldsProps) => {
 const currentStatus = (formik && formik.values && formik.values.status) ? formik.values.status : '';
-  console.log('currentStatus:', currentStatus);
   // Keep track of whether we started in "For Return" status
-  const startedAsForReturn = (isForReturn || currentStatus === 'For Return') ||  (isForReturn || currentStatus === 'Completed');
-  console.log('startedAsForReturn', startedAsForReturn);
-  //Fields should stay disabled if we started as "For Return", regardless of current status
+  const startedAsForReturn = isForReturn || currentStatus === 'For Return';
+  // Fields should stay disabled if we started as "For Return", regardless of current status
   const isDisabled = startedAsForReturn;
-  console.log('isDisabled', startedAsForReturn);
   const showReturnFields = startedAsForReturn;
   // Return fields are enabled only when moving to Completed
   const canEditReturnFields = startedAsForReturn && currentStatus === 'Completed';

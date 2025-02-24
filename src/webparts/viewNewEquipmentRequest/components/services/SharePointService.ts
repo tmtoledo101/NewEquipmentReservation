@@ -417,7 +417,7 @@ export class SharePointService {
    // const fromDateStr = moment(from).startOf('day').utc().format("YYYY-MM-DD[T]00:00:00[Z]");
     //const toDateStr =   moment(to).endOf('day').utc().format("YYYY-MM-DD[T]23:59:59[Z]");
     
-    const dateRange = `(FromDate ge datetime'${dateConverter(from,1)}' and ToDate le datetime'${dateConverter(from,2)}')`;
+    const dateRange = `(FromDate ge datetime'${moment(from).startOf('day').toISOString()}' and ToDate le datetime'${moment(to).endOf('day').toISOString()}')`;
     console.log(`departments:`,departments);
     let filterQuery = dateRange;
     if (departments && departments.length > 0) {
