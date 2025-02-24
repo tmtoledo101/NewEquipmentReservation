@@ -7,8 +7,7 @@ import {
   DialogActions,
   Button,
   CircularProgress,
-  Snackbar,
-  Box
+  Snackbar
 } from "@material-ui/core";
 import { Alert } from "@material-ui/lab";
 import CloseIcon from "@material-ui/icons/Close";
@@ -73,12 +72,12 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
   } = useEquipmentReservation(isOpen, selectedRequest, formikRef);
 
   const handleSubmit = React.useCallback(async (values: any, formikBag: any): Promise<void> => {
-    // First touch all required fields based on status
+    // First touch all required fields based on tab
     const requiredFields = ['requestedBy', 'department', 'contactNumber', 'building', 'borrowedFrom', 'time', 'status'];
     
-    if (values.status === 'For Return') {
+    if (tabValue === 2) { // For Release tab
       requiredFields.push('releasedTo', 'releasedBy', 'releaseRemarks');
-    } else if (values.status === 'Completed') {
+    } else if (tabValue === 3) { // For Return tab
       requiredFields.push('returnedTo', 'returnedBy', 'returnRemarks');
     }
     
@@ -100,7 +99,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
         severity: "error"
       });
     }
-  }, [setPendingValues, setShowConfirmation, setNotification]);
+  }, [setPendingValues, setShowConfirmation, setNotification, tabValue]);
 
   const handleConfirm = React.useCallback(async (): Promise<void> => {
     try {
@@ -200,12 +199,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
         fullWidth
       >
         <DialogContent>
-          {isSubmitting ? (
-            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "400px" }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <Formik
+          <Formik
             initialValues={React.useMemo(() => ({
               requestedBy: selectedRequest.requestedBy || "",
               department: selectedRequest.department || "",
@@ -221,7 +215,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
               status: selectedRequest.status || "For Return",
               currentRecord: -1,
               assetNumber: selectedRequest.assetNumber || [],
-            }), [selectedRequest])}
+            }), [selectedRequest, tabValue])}
             validationSchema={equipmentReservationSchema}
             onSubmit={handleSubmit}
             innerRef={formikRef}
@@ -352,9 +346,8 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                 </DialogActions>
               </form>
             )}
-            </Formik>
-          )}
-          </DialogContent>
+          </Formik>
+        </DialogContent>
       </ModalPopup>
 
       <Snackbar

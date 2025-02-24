@@ -6,7 +6,7 @@ export const validateDateTime = (startDateTime: Date | string | null, endDateTim
   moment(startDateTime).isValid() &&
   endDateTime !== null &&
   moment(endDateTime).isValid() &&
-  (moment(endDateTime).isAfter(startDateTime) || moment(endDateTime).isSame(startDateTime));
+  moment(endDateTime).isSameOrAfter(startDateTime);
 
 export const validateDateRange = (startDate: Date | string | null, endDate: Date | string | null): boolean => {
   if (!startDate || !endDate) return false;

@@ -192,8 +192,8 @@ public static async getEquipments() {
       if (files.length > 0) {
         const docLibrary = "NewEquipmentRequestDocs";
         const _itemId = item.data.ID;
-        
-        const f = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation" + "/" + docLibrary + "/" + item.data.GUID;
+        const environment = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation";
+        const f = environment + "/" + docLibrary + "/" + item.data.GUID;
         
         await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.add(item.data.GUID)
           .then(r => {

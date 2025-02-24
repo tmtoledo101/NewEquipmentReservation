@@ -20,14 +20,11 @@ interface IEquipmentReservationFormFieldsProps {
   onAddEquipment: () => void;
   onViewEquipment: (index: number) => void;
   formik: any;
-  isForReturn?: boolean;
+  isForReturnProp?: boolean;
 }
 
-const getStatusOptions = (tabValue: number, currentStatus: string) => {
-  if (tabValue === 3) { // For Return tab
-    return [{ id: 'Completed', value: 'Completed' }];
-  }
-  if (currentStatus === 'For Return') {
+const getStatusOptions = (currentStatus: string, tabValue: number) => {
+  if (tabValue === 3) { // Return tab
     return [{ id: 'Completed', value: 'Completed' }];
   }
   return [
@@ -50,16 +47,17 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
   onAddEquipment,
   onViewEquipment,
   formik,
-  isForReturn = false
+  isForReturnProp = false
 }: IEquipmentReservationFormFieldsProps) => {
-const currentStatus = (formik && formik.values && formik.values.status) ? formik.values.status : '';
-  // Keep track of whether we started in "For Return" status
-  const startedAsForReturn = isForReturn || currentStatus === 'For Return';
-  // Fields should stay disabled if we started as "For Return", regardless of current status
-  const isDisabled = startedAsForReturn;
-  const showReturnFields = startedAsForReturn;
-  // Return fields are enabled only when moving to Completed
-  const canEditReturnFields = startedAsForReturn && currentStatus === 'Completed';
+  const currentStatus = (formik && formik.values && formik.values.status) ? formik.values.status : '';
+  
+  // Fields should be disabled only in Return tab
+  const isDisabled = tabValue === 3;
+  
+  // Show and enable return fields only in Return tab
+  const showReturnFields = tabValue === 3;
+  const canEditReturnFields = tabValue === 3;
+
   return (
     <Grid container spacing={4}>
       <Grid item xs={12}>
@@ -167,13 +165,13 @@ const currentStatus = (formik && formik.values && formik.values.status) ? formik
         <div className={styles.width}>
           <div className={styles.label}>Status</div>
           <Dropdown
-            items={getStatusOptions(tabValue, currentStatus)}
+            items={getStatusOptions(currentStatus, tabValue)}
             name="status"
           />
         </div>
       </Grid>
 
-      {tabValue === 2 && ( // For Release fields
+      {currentStatus === 'For Return' && ( // For Release fields - only show when status is For Return
         <>
           <Grid item xs={6}>
             <div className={styles.width}>
@@ -202,14 +200,14 @@ const currentStatus = (formik && formik.values && formik.values.status) ? formik
         </>
       )}
 
-      {(tabValue === 3 || showReturnFields) && ( // For Return fields
+      {showReturnFields && ( // For Return fields - only show in Return tab
         <>
           <Grid item xs={6}>
             <div className={styles.width}>
               <div className={styles.label}>Returned To</div>
               <CustomInput 
                 name="returnedTo" 
-          disabled={!canEditReturnFields}
+                disabled={!canEditReturnFields}
               />
             </div>
           </Grid>
@@ -256,7 +254,7 @@ const currentStatus = (formik && formik.values && formik.values.status) ? formik
           previewChipProps={{
             classes: { root: styles.previewChip },
           }}
-          dropzoneText={isDisabled ? "File uploads are disabled when status is 'For Return'" : "Drag and drop files here or click"}
+          dropzoneText={isDisabled ? "File uploads are disabled in Return tab" : "Drag and drop files here or click"}
           previewText="Selected files"
           maxFileSize={50000000}
           onChange={isDisabled ? undefined : handleFileChange}
