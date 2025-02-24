@@ -51,13 +51,16 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
     await this.getItems(fromDate, toDate, filterColumn);
   }
 
-  private handleViewAction = (event: any, rowData: IEquipmentRequest): void => {
-    this.selectedRequest = rowData;
+  private handleViewAction = async (event: any, rowData: IEquipmentRequest): Promise<void> => {
     if (this.state.tabValue === 0 || this.state.tabValue === 1) {
       window.open(`${this.props.siteUrl}/SitePages/DisplayEquipmentReservation_appge.aspx?pid=${rowData.ID}`, "_blank");
-    } else if (this.state.tabValue === 2) { // For Release tab
-      this.setState({ showModal: true });
-    } else if (this.state.tabValue === 3) { // For Return tab
+    } else {
+      // For Release (tab 2) or Return (tab 3), get attachments before showing modal
+      const attachments = await SharePointService.getRequestAttachments(rowData.ID);
+      this.selectedRequest = {
+        ...rowData,
+        attachments
+      };
       this.setState({ showModal: true });
     }
   }

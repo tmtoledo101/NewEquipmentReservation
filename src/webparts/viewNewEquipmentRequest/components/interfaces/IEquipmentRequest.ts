@@ -20,6 +20,6 @@ export interface IEquipmentRequest {
   releasedTo?: string;
   releasedBy?: string;
   releasedDate?: string;
-  attachments?: string[];
-  guid?: string;
+  attachments?: string[]; // Add attachments field for file names
+  GUID?: string; // Add GUID field for file paths
 }

@@ -2,8 +2,6 @@ import { sp } from "@pnp/sp";
 import "@pnp/sp/webs";
 import "@pnp/sp/lists";
 import "@pnp/sp/items";
-import "@pnp/sp/files";
-import "@pnp/sp/folders";
 import * as moment from "moment";
 import { IEquipmentRequest } from "../interfaces/IEquipmentRequest";
 import { dateConverter, arrayToDropDownValues } from "../utils/helpers";
@@ -152,44 +150,6 @@ export class SharePointService {
     }
   }
 
-  public static async getFiles(guid: string, siteRelativeUrl: string) {
-    let docs = await sp.web
-      .getFolderByServerRelativeUrl(
-        siteRelativeUrl + "/NewEquipmentRequestDocs/" + guid
-      )
-      .files.select("*")
-      .top(5000)
-      .expand("ListItemAllFields")
-      .get();
-
-    return docs.map((row) => row.Name);
-  }
-
-  public static async uploadFiles(guid: string, files: File[]) {
-    const docLibrary = "NewEquipmentRequestDocs";
-    const f = configService.isDevUser() ? "/sites/ResourceReservationDev" :"/sites/ResourceReservation" + "/" + docLibrary +"/" + guid;
-    await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.getByName(guid).delete();
-    await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.add(guid);
-
-    const uploadPromises = files.map(file => {
-      if (file.size <= 10485760) {
-        return sp.web
-          .getFolderByServerRelativeUrl(f)
-          .files.add(file.name, file, true)
-          .then(result => result.file.getItem())
-          .then(item => item.update({ RequestId: guid }));
-      } else {
-        return sp.web
-          .getFolderByServerRelativeUrl(f)
-          .files.addChunked(file.name, file)
-          .then(({ file: uploadedFile }) => uploadedFile.getItem())
-          .then(item => item.update({ RequestId: guid }));
-      }
-    });
-    
-    await Promise.all(uploadPromises);
-  }
-
   public static async updateRequest(
     id: number,
     values: any,
@@ -261,9 +221,49 @@ export class SharePointService {
         .items.getById(id)
         .update(updateData);
 
-      // Handle file uploads if any
-      if (files && files.length > 0 && values.guid) {
-        await this.uploadFiles(values.guid, files);
+      // Handle file attachments if any
+      if (files && files.length > 0) {
+        // Get the request's GUID
+        const request = await sp.web.lists
+          .getByTitle("NewEquipmentRequestList")
+          .items.getById(id)
+          .select("GUID")
+          .get();
+
+        // Upload files to document library
+        const docLibrary = "NewEquipmentRequestDocs";
+        const environment = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation";
+        const folderPath = environment + "/" + docLibrary + "/" + request.GUID;
+
+        // Create folder if it doesn't exist
+        await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.add(request.GUID);
+
+        // Upload each file
+        await Promise.all(files.map(file => {
+          if (file.size <= 10485760) {
+            // Regular file upload
+            return sp.web.getFolderByServerRelativeUrl(folderPath).files.add(file.name, file, true)
+              .then(fileResult => {
+                return fileResult.file.getItem()
+                  .then(fileItem => {
+                    return fileItem.update({
+                      RequestId: id
+                    });
+                  });
+              });
+          } else {
+            // Chunked upload for large files
+            return sp.web.getFolderByServerRelativeUrl(folderPath).files.addChunked(file.name, file, d1 => {
+              console.log({ data: d1 });
+            }, true)
+              .then(({ file: fileData }) => fileData.getItem())
+              .then(fileItem => {
+                return fileItem.update({
+                  RequestId: id
+                });
+              });
+          }
+        }));
       }
     } catch (error) {
       console.error('Error in updateRequest:', error);
@@ -446,6 +446,30 @@ export class SharePointService {
     });
   }
 
+  public static async getRequestAttachments(requestId: number): Promise<string[]> {
+    try {
+      // First get the request's GUID
+      const request = await sp.web.lists
+        .getByTitle("NewEquipmentRequestList")
+        .items.getById(requestId)
+        .select("GUID")
+        .get();
+
+      // Get files from the GUID folder in the document library
+      const docLibrary = "NewEquipmentRequestDocs";
+      const environment = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation";
+      const folderPath = environment + "/" + docLibrary + "/" + request.GUID;
+
+      const folder = sp.web.getFolderByServerRelativeUrl(folderPath);
+      const files = await folder.files.get();
+
+      return files.map(file => file.Name);
+    } catch (error) {
+      console.error('Error getting attachments:', error);
+      return [];
+    }
+  }
+
   public static async getEquipmentRequests(from: Date, to: Date, departments: string[], filterColumn: string = 'Department'): Promise<IEquipmentRequest[]> {
    // const fromDateStr = moment(from).startOf('day').utc().format("YYYY-MM-DD[T]00:00:00[Z]");
     //const toDateStr =   moment(to).endOf('day').utc().format("YYYY-MM-DD[T]23:59:59[Z]");
@@ -500,7 +524,8 @@ export class SharePointService {
       releasedBy: item["Released By"],
       releasedDate: item["Released Date"],
       borrowedFrom: item.BorrowedFrom,
-      remarks: item.Remarks
+      remarks: item.Remarks,
+      GUID: item.GUID
     }));
   }
 }

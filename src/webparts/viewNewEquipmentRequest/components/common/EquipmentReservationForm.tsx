@@ -68,9 +68,8 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
     setFiles,
     notification,
     setNotification,
-    updateEquipmentList,
-    existingFiles
-  } = useEquipmentReservation(isOpen, selectedRequest, formikRef, siteUrl);
+    updateEquipmentList
+  } = useEquipmentReservation(isOpen, selectedRequest, formikRef);
 
   const handleSubmit = React.useCallback(async (values: any, formikBag: any): Promise<void> => {
     // First touch all required fields based on tab
@@ -216,6 +215,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
               status: selectedRequest.status || "For Return",
               currentRecord: -1,
               assetNumber: selectedRequest.assetNumber || [],
+              GUID: selectedRequest.GUID || "", // Add GUID to form values
             }), [selectedRequest, tabValue])}
             validationSchema={equipmentReservationSchema}
             onSubmit={handleSubmit}
@@ -240,9 +240,7 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                     }
                   }, [setEquipmentData])}
                   handleFileChange={setFiles}
-                  files={files}
-                  existingFiles={existingFiles}
-                  siteUrl={siteUrl}
+                  existingFiles={selectedRequest && selectedRequest.attachments}
                   onAddEquipment={React.useCallback(() => {
                     const currentFormik = formikRef.current;
                     if (!currentFormik) return;

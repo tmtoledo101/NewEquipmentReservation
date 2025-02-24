@@ -2,9 +2,10 @@ import * as React from 'react';
 import { Grid } from "@material-ui/core";
 import { CustomInput, CustomDateTimePicker, Dropdown } from './FormComponents';
 import { EquipmentList } from './EquipmentList';
-import { FileList } from './FileList';
+import { DropzoneArea } from "material-ui-dropzone";
 import { IDropdownItem, IEquipmentData } from '../utils/helpers';
 import styles from './EquipmentReservationForm.module.scss';
+import { configService } from '../../../../shared/services/ConfigurationService';
 
 interface IEquipmentReservationFormFieldsProps {
   departmentList: IDropdownItem[];
@@ -21,9 +22,7 @@ interface IEquipmentReservationFormFieldsProps {
   onViewEquipment: (index: number) => void;
   formik: any;
   isForReturnProp?: boolean;
-  files: File[];
-  existingFiles: string[];
-  siteUrl: string;
+  existingFiles?: string[]; // Add prop for existing files
 }
 
 const getStatusOptions = (currentStatus: string, tabValue: number) => {
@@ -51,9 +50,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
   onViewEquipment,
   formik,
   isForReturnProp = false,
-  files,
-  existingFiles,
-  siteUrl
+  existingFiles = []
 }: IEquipmentReservationFormFieldsProps) => {
   const currentStatus = (formik && formik.values && formik.values.status) ? formik.values.status : '';
   
@@ -242,23 +239,48 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
         </>
       )}
 
-      <Grid item xs={12}>
-        <FileList
-          files={files}
-          existingFiles={existingFiles}
-          onFileChange={handleFileChange}
-          onFileDownload={(fileName) => {
-            const url = formik && formik.values
-                        ? `${siteUrl}/NewEquipmentRequestDocs/${formik.values.guid}/${fileName}`
-                        : `${siteUrl}/NewEquipmentRequestDocs/${fileName}`;
+      <Grid item xs={6}>
+        <div className={styles.label}>
+          Attachment Here
+        </div>
+      </Grid>
 
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = fileName;
-            link.click();
-          }}
-          disabled={isDisabled}
-        />
+      <Grid item xs={12}>
+        {isDisabled ? (
+          // If disabled, show existing files as links
+          <div>
+            {existingFiles && existingFiles.map((fileName, index) => (
+              <a 
+                key={index}
+                href={`${window.location.origin}${configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation"}/NewEquipmentRequestDocs/${formik.values.GUID}/${fileName}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ margin: '0 8px', textDecoration: 'underline', color: '#0078d4' }}
+              >
+                {fileName}
+              </a>
+            ))}
+          </div>
+        ) : (
+          // If not disabled, show DropzoneArea with existing files
+          <DropzoneArea
+            showPreviews={true}
+            showPreviewsInDropzone={false}
+            useChipsForPreview
+            dropzoneClass={styles.dropZone}
+            previewGridProps={{
+              container: { spacing: 1, direction: "row" },
+            }}
+            previewChipProps={{
+              classes: { root: styles.previewChip },
+            }}
+            dropzoneText="Drag and drop files here or click"
+            previewText="Selected files"
+            maxFileSize={50000000}
+            onChange={handleFileChange}
+            initialFiles={existingFiles || []}
+          />
+        )}
       </Grid>
     </Grid>
   );
