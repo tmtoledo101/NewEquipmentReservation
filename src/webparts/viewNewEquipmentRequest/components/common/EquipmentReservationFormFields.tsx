@@ -64,9 +64,8 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
   const isFilesDisabled = tabValue === 2;  // Files are read-only in For Release tab
   const isEquipmentDisabled = tabValue === 3;  // Equipment list is disabled in For Return tab
   
-  // Show and enable return fields only in Return tab
-  const showReturnFields = tabValue === 3;
-  const canEditReturnFields = tabValue === 3;
+  // Enable return fields editing when status is Completed
+  const canEditReturnFields = currentStatus === 'Completed';
 
   // State for loading indicators and notifications
   const [loading, setLoading] = React.useState<{[key: string]: boolean}>({});
@@ -254,7 +253,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
         </div>
       </Grid>
 
-      {currentStatus === 'For Return' && ( // For Release fields - only show when status is For Return
+      {currentStatus === 'For Return' && tabValue === 2 && ( // For Release fields - only show when status is For Return and in Release tab
         <>
           <Grid item xs={6}>
             <div className={styles.width}>
@@ -283,7 +282,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
         </>
       )}
 
-      {showReturnFields && ( // For Return fields - only show in Return tab
+      {currentStatus === 'Completed' && ( // For Return fields - only show when status is Completed
         <>
           <Grid item xs={6}>
             <div className={styles.width}>
