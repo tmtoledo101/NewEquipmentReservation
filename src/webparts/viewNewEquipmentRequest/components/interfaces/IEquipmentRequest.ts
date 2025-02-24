@@ -20,4 +20,6 @@ export interface IEquipmentRequest {
   releasedTo?: string;
   releasedBy?: string;
   releasedDate?: string;
+  attachments?: string[];
+  guid?: string;
 }

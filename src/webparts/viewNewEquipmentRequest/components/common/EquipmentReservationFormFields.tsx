@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Grid } from "@material-ui/core";
 import { CustomInput, CustomDateTimePicker, Dropdown } from './FormComponents';
 import { EquipmentList } from './EquipmentList';
-import { DropzoneArea } from "material-ui-dropzone";
+import { FileList } from './FileList';
 import { IDropdownItem, IEquipmentData } from '../utils/helpers';
 import styles from './EquipmentReservationForm.module.scss';
 
@@ -21,6 +21,9 @@ interface IEquipmentReservationFormFieldsProps {
   onViewEquipment: (index: number) => void;
   formik: any;
   isForReturnProp?: boolean;
+  files: File[];
+  existingFiles: string[];
+  siteUrl: string;
 }
 
 const getStatusOptions = (currentStatus: string, tabValue: number) => {
@@ -47,7 +50,10 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
   onAddEquipment,
   onViewEquipment,
   formik,
-  isForReturnProp = false
+  isForReturnProp = false,
+  files,
+  existingFiles,
+  siteUrl
 }: IEquipmentReservationFormFieldsProps) => {
   const currentStatus = (formik && formik.values && formik.values.status) ? formik.values.status : '';
   
@@ -236,29 +242,22 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
         </>
       )}
 
-      <Grid item xs={6}>
-        <div className={styles.label}>
-          Attachment Here
-        </div>
-      </Grid>
-
       <Grid item xs={12}>
-        <DropzoneArea
-          showPreviews={true}
-          showPreviewsInDropzone={false}
-          useChipsForPreview
-          dropzoneClass={styles.dropZone}
-          previewGridProps={{
-            container: { spacing: 1, direction: "row" },
+        <FileList
+          files={files}
+          existingFiles={existingFiles}
+          onFileChange={handleFileChange}
+          onFileDownload={(fileName) => {
+            const url = formik && formik.values
+                        ? `${siteUrl}/NewEquipmentRequestDocs/${formik.values.guid}/${fileName}`
+                        : `${siteUrl}/NewEquipmentRequestDocs/${fileName}`;
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            link.click();
           }}
-          previewChipProps={{
-            classes: { root: styles.previewChip },
-          }}
-          dropzoneText={isDisabled ? "File uploads are disabled in Return tab" : "Drag and drop files here or click"}
-          previewText="Selected files"
-          maxFileSize={50000000}
-          onChange={isDisabled ? undefined : handleFileChange}
-          acceptedFiles={isDisabled ? [] : undefined}
+          disabled={isDisabled}
         />
       </Grid>
     </Grid>

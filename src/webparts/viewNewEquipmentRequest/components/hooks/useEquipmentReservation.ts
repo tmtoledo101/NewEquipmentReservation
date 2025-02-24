@@ -7,7 +7,8 @@ import { useEffect } from "react";
 export const useEquipmentReservation = (
   isOpen: boolean,
   selectedRequest: IEquipmentRequest | null,
-  formikRef: React.RefObject<any>
+  formikRef: React.RefObject<any>,
+  siteRelativeUrl: string
 ) => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [showEquipmentDialog, setShowEquipmentDialog] = React.useState(false);
@@ -26,6 +27,8 @@ export const useEquipmentReservation = (
   const [buildEquipmentMap, setBuildEquipmentMap] = React.useState<IBuildEquipmentMap>({});
   const [isFssManaged, setIsFssManaged] = React.useState<boolean>(false);
   const [files, setFiles] = React.useState<File[]>([]);
+  const [existingFiles, setExistingFiles] = React.useState<string[]>([]);
+  const [guid, setGuid] = React.useState<string>("");
   const [notification, setNotification] = React.useState<INotification>({
     show: false,
     message: "",
@@ -70,6 +73,7 @@ export const useEquipmentReservation = (
       quantity: "",
       currentRecord: -1,
       assetNumber: [],
+      guid: selectedRequest.guid || "",
     };
   }, [selectedRequest]);
 
@@ -89,11 +93,13 @@ export const useEquipmentReservation = (
         const [
           departmentsResponse,
           equipmentResponse,
-          timesResponse
+          timesResponse,
+          existingFilesResponse
         ] = await Promise.all([
           SharePointService.getDepartments(user.Email),
           SharePointService.getEquipments(),
-          SharePointService.getTime()
+          SharePointService.getTime(),
+          selectedRequest.guid ? SharePointService.getFiles(selectedRequest.guid, siteRelativeUrl) : Promise.resolve([])
         ]);
 
         if (!mounted) return;
@@ -105,6 +111,8 @@ export const useEquipmentReservation = (
         setBuildBorrowedMap(equipmentResponse.buildBorrowedMap);
         setBuildEquipmentMap(equipmentResponse.buildEquipmentMap);
         setTimeList(timesResponse);
+        setExistingFiles(existingFilesResponse);
+        setGuid(selectedRequest.guid || "");
 
         // Initialize form with selected request data
         const formik = formikRef.current;
@@ -164,7 +172,7 @@ export const useEquipmentReservation = (
     return () => {
       mounted = false;
     };
-  }, [isOpen, selectedRequest, initialFormValues]);
+  }, [isOpen, selectedRequest, initialFormValues, siteRelativeUrl]);
 
   // Handle borrowedFromList initialization when buildBorrowedMap changes
   React.useEffect(() => {
@@ -213,6 +221,8 @@ export const useEquipmentReservation = (
     isFssManaged,
     files,
     setFiles,
+    existingFiles,
+    guid,
     notification,
     setNotification,
     updateEquipmentList

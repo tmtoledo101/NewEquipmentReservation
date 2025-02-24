@@ -68,8 +68,9 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
     setFiles,
     notification,
     setNotification,
-    updateEquipmentList
-  } = useEquipmentReservation(isOpen, selectedRequest, formikRef);
+    updateEquipmentList,
+    existingFiles
+  } = useEquipmentReservation(isOpen, selectedRequest, formikRef, siteUrl);
 
   const handleSubmit = React.useCallback(async (values: any, formikBag: any): Promise<void> => {
     // First touch all required fields based on tab
@@ -239,6 +240,9 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                     }
                   }, [setEquipmentData])}
                   handleFileChange={setFiles}
+                  files={files}
+                  existingFiles={existingFiles}
+                  siteUrl={siteUrl}
                   onAddEquipment={React.useCallback(() => {
                     const currentFormik = formikRef.current;
                     if (!currentFormik) return;
