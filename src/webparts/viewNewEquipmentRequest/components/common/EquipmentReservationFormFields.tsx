@@ -58,14 +58,23 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
 }: IEquipmentReservationFormFieldsProps) => {
   const currentStatus = (formik && formik.values && formik.values.status) ? formik.values.status : '';
   
-  // Disable logic based on tab:
-  // - For Release (2): Only files are disabled
-  // - For Return (3): Only equipment list is disabled
+  // Disable logic based on tab and status:
+  // - For Release (2): Files are disabled, Building/Borrowed From/Time/Dates are always disabled
+  // - For Return (3): Equipment list is disabled, Building/Borrowed From/Time/Dates are always disabled
   const isFilesDisabled = tabValue === 2;  // Files are read-only in For Release tab
   const isEquipmentDisabled = tabValue === 3;  // Equipment list is disabled in For Return tab
   
+  // Basic information fields are always disabled
+  const isBasicInfoDisabled = true;
+  
+  // Department and Contact fields should be disabled in For Return tab
+  const isDepartmentContactDisabled = tabValue === 3;
+  
   // Enable return fields editing when status is Completed
   const canEditReturnFields = currentStatus === 'Completed';
+  
+  // Enable release fields editing when in For Release tab
+  const canEditReleaseFields = tabValue === 2;
 
   // State for loading indicators and notifications
   const [loading, setLoading] = React.useState<{[key: string]: boolean}>({});
@@ -165,6 +174,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           <Dropdown
             items={departmentList}
             name="department"
+            disabled={isDepartmentContactDisabled}
           />
         </div>
       </Grid>
@@ -172,7 +182,10 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
       <Grid item xs={6}>
         <div className={styles.width}>
           <div className={styles.label}>Contact No.</div>
-          <CustomInput name="contactNumber" />
+          <CustomInput 
+            name="contactNumber" 
+            disabled={isDepartmentContactDisabled}
+          />
         </div>
       </Grid>
 
@@ -183,6 +196,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
             items={buildingList}
             name="building"
             handleChange={handleBuilding}
+            disabled={isBasicInfoDisabled}
           />
         </div>
       </Grid>
@@ -194,6 +208,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
             items={borrowedFromList}
             name="borrowedFrom"
             handleChange={handleBorrowedFrom}
+            disabled={isBasicInfoDisabled}
           />
         </div>
       </Grid>
@@ -205,6 +220,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
             items={timeList}
             name="time"
             handleChange={handleTimeChange}
+            disabled={isBasicInfoDisabled}
           />
         </div>
       </Grid>
@@ -214,6 +230,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           <div className={styles.label}>Date of use - From</div>
           <CustomDateTimePicker
             name="fromDate"
+            disabled={isBasicInfoDisabled}
           />
         </div>
       </Grid>
@@ -223,6 +240,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
           <div className={styles.label}>Date of use - To</div>
           <CustomDateTimePicker
             name="toDate"
+            disabled={isBasicInfoDisabled}
           />
         </div>
       </Grid>
@@ -239,7 +257,10 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
       <Grid item xs={12}>
         <div className={styles.width}>
           <div className={styles.label}>Remarks</div>
-          <CustomInput name="remarks" />
+          <CustomInput 
+            name="remarks" 
+            disabled={isDepartmentContactDisabled} // Disable in For Return tab
+          />
         </div>
       </Grid>
 
@@ -253,19 +274,25 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
         </div>
       </Grid>
 
-      {currentStatus === 'For Return' && tabValue === 2 && ( // For Release fields - only show when status is For Return and in Release tab
+      {tabValue === 2 && ( // For Release fields - show in Release tab
         <>
           <Grid item xs={6}>
             <div className={styles.width}>
               <div className={styles.label}>Released To</div>
-              <CustomInput name="releasedTo" />
+              <CustomInput 
+                name="releasedTo" 
+                disabled={!canEditReleaseFields}
+              />
             </div>
           </Grid>
 
           <Grid item xs={6}>
             <div className={styles.width}>
               <div className={styles.label}>Released By</div>
-              <CustomInput name="releasedBy" />
+              <CustomInput 
+                name="releasedBy" 
+                disabled={!canEditReleaseFields}
+              />
             </div>
           </Grid>
 
@@ -276,13 +303,14 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
                 name="releaseRemarks" 
                 multiline 
                 rows={4}
+                disabled={!canEditReleaseFields}
               />
             </div>
           </Grid>
         </>
       )}
 
-      {currentStatus === 'Completed' && ( // For Return fields - only show when status is Completed
+      {tabValue === 3 && ( // For Return fields - show in Return tab
         <>
           <Grid item xs={6}>
             <div className={styles.width}>

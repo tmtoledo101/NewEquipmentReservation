@@ -558,9 +558,12 @@ export default class DisplayNewEquipmentRequest extends React.Component<
   }
 
   private handleFileChange = (files: File[]) => {
-    this.setState({
-      files,
-    });
+    // Only allow file changes when not in "For Release" status
+    if (this.state.requestStatus !== "For Release") {
+      this.setState({
+        files,
+      });
+    }
   }
 
   private handleFileDownload = (fileName: string) => {

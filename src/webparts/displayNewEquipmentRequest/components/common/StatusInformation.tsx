@@ -27,14 +27,14 @@ export const StatusInformation: React.FC<IStatusInformationProps> = ({
           </Grid>
           <Grid item xs={6}>
             <div className={styles.label}>Released To</div>
-            <CustomInput name="releasedTo" disabled={requestStatus === RETURN} />
+            <CustomInput name="releasedTo" disabled={true} />
           </Grid>
           <Grid item xs={6}>
             <div className={styles.label}>Released Remarks</div>
-            <CustomInput
-              name="releasedRemarks"
-              disabled={requestStatus === RETURN}
-            />
+          <CustomInput
+            name="releasedRemarks"
+            disabled={true}
+          />
           </Grid>
         </>
       )}
@@ -46,11 +46,11 @@ export const StatusInformation: React.FC<IStatusInformationProps> = ({
           </Grid>
           <Grid item xs={6}>
             <div className={styles.label}>Returned By</div>
-            <CustomInput name="returnedBy" />
+            <CustomInput name="returnedBy" disabled={!isEdit} />
           </Grid>
           <Grid item xs={12}>
             <div className={styles.label}>Returned Remarks</div>
-            <CustomInput name="returnedRemarks" />
+            <CustomInput name="returnedRemarks" disabled={!isEdit} />
           </Grid>
         </>
       )}

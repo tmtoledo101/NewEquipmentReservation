@@ -238,7 +238,7 @@ export class SharePointService {
         const folderPath = environment + "/" + docLibrary + "/" + request.GUID;
 
         console.log('Guid:', request.GUID);
-        await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.getByName(request.GUID).delete();
+        //await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.getByName(request.GUID).delete();
         // Create folder if it doesn't exist
         await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.add(request.GUID);
 
@@ -251,7 +251,7 @@ export class SharePointService {
                 return fileResult.file.getItem()
                   .then(fileItem => {
                     return fileItem.update({
-                      RequestId: id
+                        Id: id
                     });
                   });
               });
@@ -263,7 +263,7 @@ export class SharePointService {
               .then(({ file: fileData }) => fileData.getItem())
               .then(fileItem => {
                 return fileItem.update({
-                  RequestId: id
+                  Id: id
                 });
               });
           }

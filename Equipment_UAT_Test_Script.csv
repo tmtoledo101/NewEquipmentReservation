@@ -1,0 +1,87 @@
+Test Case ID,Module,Test Case Description,Test Steps,Test Data,Expected Result,Actual Result,Status,Comments
+TC-NER-001,NewEquipmentReservation WebPart,Create a new basic equipment reservation,"1. Navigate to the equipment reservation page
+2. Fill in Basic Information section:
+     - Purpose of reservation
+     - Department
+     - Contact information
+3. Select Equipment:
+     - Open equipment dialog
+     - Select equipment items
+     - Add quantities
+4. Fill in Date/Time section:
+     - Select start date and time
+     - Select end date and time
+5. Click Submit","Purpose: ""Lab Testing""
+Department: ""R&D""
+Contact: ""John Doe""
+Equipment: ""Microscope""
+Quantity: 2
+Start Date: [Current Date + 1]
+Start Time: 09:00 AM
+End Time: 05:00 PM",Equipment reservation should be created successfully with confirmation message,,,
+TC-NER-002,NewEquipmentReservation WebPart,Create reservation with multiple equipment items,"1. Follow steps 1-2 from TC-NER-001
+2. Click ""Add Equipment""
+3. Select multiple equipment items
+4. Set quantities for each
+5. Complete reservation","Basic reservation data from TC-NER-001
+Equipment Items:
+* Microscope (2 units)
+* Test Tubes (10 units)
+* Digital Scale (1 unit)",Reservation should be created with all selected equipment items,,,
+TC-NER-003,NewEquipmentReservation WebPart,Test form validation rules,"1. Submit form without required fields
+2. Enter invalid data formats
+3. Test date/time validations
+4. Test equipment quantity validations","Empty required fields
+Past dates
+Invalid time combinations
+Zero or negative quantities",Appropriate validation messages should be displayed,,,
+TC-NER-004,NewEquipmentReservation WebPart,Test equipment search functionality,"1. Open equipment dialog
+2. Use search function
+3. Apply filters
+4. Select equipment from filtered results","Search terms: ""microscope"", ""lab""
+Filter criteria: Category, Availability",Search results should match criteria and be selectable,,,
+TC-NER-005,NewEquipmentReservation WebPart,Test notification system,"1. Submit successful reservation
+2. Test validation error notifications
+3. Test system error notifications
+4. Verify notification dismissal","Valid and invalid form submissions
+Network error scenarios",Appropriate notifications should display and be dismissable,,,
+TC-DER-001,DisplayNewEquipmentRequest WebPart,View details of an existing equipment request,"1. Navigate to display page
+2. Locate specific equipment request
+3. View all request details
+4. Verify equipment list display","Use reservation created in TC-NER-001",All request details should be displayed correctly,,,
+TC-DER-002,DisplayNewEquipmentRequest WebPart,Test equipment status update functionality,"1. Open equipment request
+2. View current status
+3. Update equipment status
+4. Save changes","Status changes: Available → Reserved → In Use",Status should update successfully with timestamp,,,
+TC-DER-003,DisplayNewEquipmentRequest WebPart,Test file attachment features,"1. Open equipment request
+2. Upload documentation
+3. View attached files
+4. Download attachments
+5. Delete attachments","PDF documents
+Image files
+Maximum file size tests",Files should be manageable and accessible,,,
+TC-VER-001,ViewNewEquipmentRequest WebPart,Test equipment request list functionality,"1. Navigate to view page
+2. Test list sorting
+3. Apply filters
+4. Test pagination","Multiple equipment requests
+Different status states",List should be sortable and filterable,,,
+TC-VER-002,ViewNewEquipmentRequest WebPart,Test search capabilities,"1. Use search form
+2. Test different search criteria
+3. Verify search results","Equipment names
+Department names
+Date ranges",Search should return relevant results,,,
+TC-VER-003,ViewNewEquipmentRequest WebPart,Test equipment reservation form in view mode,"1. Open reservation form
+2. Test all form fields
+3. Verify equipment selection
+4. Test date/time picker","Various equipment combinations
+Different time slots",Form should function correctly in view mode,,,
+TC-VER-004,ViewNewEquipmentRequest WebPart,Test custom table functionality,"1. Test column sorting
+2. Apply filters
+3. Test row selection
+4. Export data","Multiple data rows
+Different data types",Table features should work as expected,,,
+TC-VER-005,ViewNewEquipmentRequest WebPart,Test date/time filtering,"1. Set date range filter
+2. Apply time filters
+3. Clear filters
+4. Verify results","Various date ranges
+Time slot combinations",Results should match selected date/time criteria,,,

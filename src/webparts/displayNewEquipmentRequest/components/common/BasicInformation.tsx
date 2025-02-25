@@ -57,7 +57,7 @@ export const BasicInformation: React.FC<IBasicInformationProps> = ({
             items={buildingList}
             name="building"
             handleChange={handleBuilding}
-            disabled
+            disabled={true} // Always disabled regardless of status
           />
         </div>
       </Grid>
@@ -68,26 +68,36 @@ export const BasicInformation: React.FC<IBasicInformationProps> = ({
             items={borrowedFromList}
             name="borrowedFrom"
             handleChange={(e) => handleBorrowedFrom(e, formik)}
-            disabled
+            disabled={true} // Always disabled regardless of status
           />
         </div>
       </Grid>
       <Grid item xs={12} sm={6}>
         <div className={styles.width}>
           <div className={styles.label}>Time</div>
-          <Dropdown items={timeList} name="time" disabled />
+          <Dropdown 
+            items={timeList} 
+            name="time" 
+            disabled={true} // Always disabled regardless of status
+          />
         </div>
       </Grid>
       <Grid item xs={12} sm={6}>
         <div className={styles.width}>
           <div className={styles.label}>Date of use - From</div>
-          <CustomDateTimePicker name="fromDate" disabled />
+          <CustomDateTimePicker 
+            name="fromDate" 
+            disabled={true} // Always disabled regardless of status
+          />
         </div>
       </Grid>
       <Grid item xs={12} sm={6}>
         <div className={styles.width}>
           <div className={styles.label}>Date of use - To</div>
-          <CustomDateTimePicker name="toDate" disabled />
+          <CustomDateTimePicker 
+            name="toDate" 
+            disabled={true} // Always disabled regardless of status
+          />
         </div>
       </Grid>
       <Grid item xs={12}>
