@@ -32,7 +32,7 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
   setNotification
 }) => {
   const handleSave = (formikInstance: any) => {
-    if (!formikInstance || !formikInstance.values) return;
+    if (!formikInstance) return;
     
     const newData = {
       equipment: formikInstance.values.equipment,
@@ -59,7 +59,7 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
   };
 
   const handleDelete = (formikInstance: any) => {
-    if (!formikInstance || !formikInstance.values) return;
+    if (!formikInstance) return;
     
     const updatedEquipmentData = equipmentData.filter(
       (_, index) => index !== formikInstance.values.currentRecord

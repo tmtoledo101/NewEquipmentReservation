@@ -258,13 +258,16 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       return;
                     }
 
+                    // Update equipment list based on building and borrowedFrom
+                    updateEquipmentList(building, borrowedFrom);
+
                     currentFormik.setFieldValue("currentRecord", -1);
                     currentFormik.setFieldValue("equipment", "");
                     currentFormik.setFieldValue("quantity", "");
                     currentFormik.setFieldValue("assetNumber", []);
                     
                     setShowEquipmentDialog(true);
-                  }, [formikRef, setNotification, setShowEquipmentDialog])}
+                  }, [formikRef, setNotification, setShowEquipmentDialog, updateEquipmentList])}
                   onViewEquipment={React.useCallback((index) => {
                     const currentFormik = formikRef.current;
                     if (!currentFormik) return;
