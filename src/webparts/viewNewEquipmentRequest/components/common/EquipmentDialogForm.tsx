@@ -76,10 +76,21 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
   };
 
   const handleEquipmentChange = (e: any) => {
-    if (!formik || !formik.setFieldValue) return;
+    console.log("EquipmentDialogForm - handleEquipmentChange called");
+    console.log("Event value:", e.target.value);
+    
+    if (!formik || !formik.setFieldValue) {
+      console.log("Formik or setFieldValue is undefined");
+      return;
+    }
 
     const value = e.target.value;
+    console.log("Current formik values:", formik.values);
+    console.log("Current equipmentData:", equipmentData);
+    
     const currentSelectedEquipments = equipmentData.map(item => item.equipment);
+    console.log("Current selected equipments:", currentSelectedEquipments);
+    
     const result = handleEquipmentSelection(
       value,
       currentSelectedEquipments,
@@ -90,8 +101,11 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
       formik.values.borrowedFrom,
       buildEquipmentMap
     );
+    
+    console.log("handleEquipmentSelection result:", result);
 
     if (!result.isValid) {
+      console.log("Equipment selection is not valid:", result.message);
       setNotification({
         show: true,
         message: result.message || "An error occurred",
@@ -100,27 +114,51 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
       return;
     }
 
+    console.log("Setting equipment value:", value);
     formik.setFieldValue("equipment", value);
     formik.setFieldValue("quantity", "");
     formik.setFieldValue("assetNumber", []);
 
     if (result.quantities) {
+      console.log("Setting quantity list:", result.quantities);
       setQuantityList(result.quantities);
     }
     if (result.assetNumbers) {
+      console.log("Setting asset numbers:", result.assetNumbers);
       setAssetList(result.assetNumbers);
       formik.setFieldValue("assetNumber", result.assetNumbers);
     }
+    
+    // Force update to ensure UI reflects the changes
+    setTimeout(() => {
+      console.log("After timeout - formik values:", formik.values);
+    }, 0);
   };
 
   const handleQuantityChange = (e: any) => {
+    console.log("EquipmentDialogForm - handleQuantityChange called");
+    console.log("Event value:", e.target.value);
+    
     const value = e.target.value;
     if (formik && formik.setFieldValue) {
+      console.log("Setting quantity value:", value);
       formik.setFieldValue("quantity", value);
+      
       const currentAssetNumbers = formik.values.assetNumber || [];
+      console.log("Current asset numbers:", currentAssetNumbers);
+      
       const updatedAssetNumbers = currentAssetNumbers.slice(0, parseInt(value));
+      console.log("Updated asset numbers:", updatedAssetNumbers);
+      
       setAssetList(updatedAssetNumbers);
       formik.setFieldValue("assetNumber", updatedAssetNumbers);
+      
+      // Force update to ensure UI reflects the changes
+      setTimeout(() => {
+        console.log("After timeout - formik values:", formik.values);
+      }, 0);
+    } else {
+      console.log("Formik or setFieldValue is undefined");
     }
   };
 

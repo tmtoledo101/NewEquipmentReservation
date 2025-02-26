@@ -20,6 +20,7 @@ import { equipmentReservationSchema } from '../utils/validation';
 import { useEquipmentReservation } from '../hooks/useEquipmentReservation';
 import { EquipmentReservationFormFields } from './EquipmentReservationFormFields';
 import { ConfirmationDialogForm } from './ConfirmationDialogForm';
+import { handleEquipmentSelection } from '../utils/helpers';
 import styles from './EquipmentReservationForm.module.scss';
 
 interface IEquipmentReservationFormProps {
@@ -269,11 +270,19 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                     setShowEquipmentDialog(true);
                   }, [formikRef, setNotification, setShowEquipmentDialog, updateEquipmentList])}
                   onViewEquipment={React.useCallback((index) => {
+                    console.log("onViewEquipment called with index:", index);
+                    
                     const currentFormik = formikRef.current;
-                    if (!currentFormik) return;
+                    if (!currentFormik) {
+                      console.log("formikRef.current is undefined");
+                      return;
+                    }
 
                     const existingEquipmentData = equipmentData[index];
+                    console.log("existingEquipmentData:", existingEquipmentData);
+                    
                     if (!existingEquipmentData) {
+                      console.log("existingEquipmentData is undefined");
                       setNotification({
                         show: true,
                         message: "Failed to load equipment data",
@@ -282,12 +291,15 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                       return;
                     }
 
+                    console.log("Setting currentRecord to:", index);
                     currentFormik.setFieldValue("currentRecord", index);
                     
                     const building = currentFormik.values.building;
                     const borrowedFrom = currentFormik.values.borrowedFrom;
+                    console.log("building:", building, "borrowedFrom:", borrowedFrom);
                     
                     if (!building || !borrowedFrom) {
+                      console.log("building or borrowedFrom is missing");
                       setNotification({
                         show: true,
                         message: "Please select a Building and Borrowed From first",
@@ -297,7 +309,9 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                     }
 
                     const key = `${building}-${borrowedFrom}`;
+                    console.log("buildEquipmentMap key:", key);
                     const availableEquipment = buildEquipmentMap[key];
+                    console.log("availableEquipment:", availableEquipment);
                     
                     if (availableEquipment) {
                       const uniqueEquipment = [...new Set(
@@ -306,25 +320,54 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
                           .map(item => item.equipment)
                       )];
                       
+                      console.log("uniqueEquipment:", uniqueEquipment);
+                      
                       const equipmentItems = uniqueEquipment.map(item => ({
                         id: item,
                         value: item
                       }));
+                      console.log("Setting equipmentList:", equipmentItems);
                       setEquipmentList(equipmentItems);
                       
-                      currentFormik.setFieldValue("equipment", existingEquipmentData.equipment);
-                      currentFormik.setFieldValue("quantity", existingEquipmentData.quantity);
-                      currentFormik.setFieldValue("assetNumber", existingEquipmentData.assetNumber);
+                      console.log("Setting formik values from existingEquipmentData");
+                      console.log("equipment:", existingEquipmentData.equipment);
+                      console.log("quantity:", existingEquipmentData.quantity);
+                      console.log("assetNumber:", existingEquipmentData.assetNumber);
                       
-                      setShowEquipmentDialog(true);
+                      // Directly create quantity list based on the existing quantity value
+                      const existingQuantity = existingEquipmentData.quantity;
+                      console.log("Existing quantity:", existingQuantity);
+                      
+                      // Create a quantity list with at least the existing quantity
+                      const maxQuantity = Math.max(parseInt(existingQuantity)); // Use at least 5 as max
+                      const quantities = Array.from(
+                        { length: maxQuantity },
+                        (_, i) => ({ id: (i + 1).toString(), value: (i + 1).toString() })
+                      );
+                      
+                      console.log("Setting quantityList directly:", quantities);
+                      setQuantityList(quantities);
+                      
+                      // Set values with a small delay to ensure they're applied
+                      setTimeout(() => {
+                        currentFormik.setFieldValue("equipment", existingEquipmentData.equipment);
+                        currentFormik.setFieldValue("quantity", existingEquipmentData.quantity);
+                        currentFormik.setFieldValue("assetNumber", existingEquipmentData.assetNumber);
+                        
+                        console.log("After setting values - formik values:", currentFormik.values);
+                        
+                        // Show dialog after values are set
+                        setShowEquipmentDialog(true);
+                      }, 0);
                     } else {
+                      console.log("availableEquipment is undefined or empty");
                       setNotification({
                         show: true,
                         message: "Failed to load equipment options",
                         severity: "error"
                       });
                     }
-                  }, [buildEquipmentMap, equipmentData, setEquipmentList, setNotification, setShowEquipmentDialog])}
+                  }, [buildEquipmentMap, equipmentData, setEquipmentList, setNotification, setShowEquipmentDialog, formikRef])}
                   formik={formikRef.current}
                 />
 

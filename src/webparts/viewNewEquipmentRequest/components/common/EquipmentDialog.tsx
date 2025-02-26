@@ -46,20 +46,30 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
   const [localEquipment, setLocalEquipment] = React.useState<string>('');
   const [localQuantity, setLocalQuantity] = React.useState<string>('');
   
-  // Sync local state with formik values when dialog opens or formik values change
+  // Debug log when dialog opens or formik values change
   React.useEffect(() => {
+    console.log("EquipmentDialog - Dialog opened or values changed");
+    console.log("formik.values.equipment:", formik.values.equipment);
+    console.log("formik.values.quantity:", formik.values.quantity);
+    console.log("formik.values.assetNumber:", formik.values.assetNumber);
+    console.log("equipmentList:", equipmentList);
+    console.log("quantityList:", quantityList);
+    
+    // Update local state when formik values change
     setLocalEquipment(formik.values.equipment || '');
     setLocalQuantity(formik.values.quantity || '');
-  }, [open, formik.values.equipment, formik.values.quantity]);
+  }, [open, formik.values.equipment, formik.values.quantity, formik.values.assetNumber, equipmentList, quantityList]);
   
   // Enhanced handlers that update both local state and formik values
   const handleEquipmentChangeWithLocalState = (e: any) => {
+    console.log("Equipment selected:", e.target.value);
     const value = e.target.value;
     setLocalEquipment(value);
     handleEquipment(e);
   };
   
   const handleQuantityChangeWithLocalState = (e: any) => {
+    console.log("Quantity selected:", e.target.value);
     const value = e.target.value;
     setLocalQuantity(value);
     handleQuantity(e);
