@@ -112,19 +112,18 @@ export default class NewEquimentReservation extends React.Component<INewEquiment
     this.inputRef.current.setFieldValue("quantity", "");
     this.inputRef.current.setFieldValue("assetNumber", []);
 
-    let equipmentList = this.state.equipmentList;
-
     // Set currentRecord first
     this.inputRef.current.setFieldValue("currentRecord", index);
 
     if (index >= 0) {
+      // Editing existing equipment
+      console.log("Equipment data:", this.equipmentListMap);
       const data = this.state.equipmentData[index];
       const quantity = this.equipmentListMap[data.equipment].length;
       const list = Array.from({ length: quantity }, (_, i) => i + 1);
       const assetList = this.equipmentListMap[data.equipment].map(item => item.AssetNumber);
 
       this.setState({
-        equipmentList,
         quantityList: list.map(num => ({ id: num, value: num.toString() })),
         assetList,
       });
@@ -132,11 +131,30 @@ export default class NewEquimentReservation extends React.Component<INewEquiment
       this.inputRef.current.setFieldValue("equipment", data.equipment);
       this.inputRef.current.setFieldValue("quantity", data.quantity);
       this.inputRef.current.setFieldValue("assetNumber", data.assetNumber);
-    } else {
+    } 
+    
+    // Always refresh equipment list regardless of whether editing or adding
+    if (this.equipmentListMap) {
       const selectedEquipment = this.state.equipmentData.map(item => item.equipment);
-      equipmentList = equipmentList.filter(item => !selectedEquipment.includes(item.value));
-
-      this.setState({ equipmentList });
+      const building = this.inputRef.current.values.building;
+      const borrowedFrom = this.inputRef.current.values.borrowedFrom;
+      
+      if (building && borrowedFrom) {
+        // Create a fresh list of equipment from current selection
+        const freshEquipmentList = Object.keys(this.equipmentListMap).map(item => ({
+          id: item,
+          value: item
+        }));
+        
+        // Filter out already selected equipment
+        const filteredEquipmentList = freshEquipmentList.filter(item => 
+          index >= 0 ? 
+            item.value === this.state.equipmentData[index].equipment || !selectedEquipment.includes(item.value) : 
+            !selectedEquipment.includes(item.value)
+        );
+        
+        this.setState({ equipmentList: filteredEquipmentList });
+      }
     }
   }
 
@@ -290,7 +308,7 @@ export default class NewEquimentReservation extends React.Component<INewEquiment
       toDate,
       timeslot
     );
-
+    console.log('equipment',equipment);
     if (availableEquipment.length === 0) {
       this.setState({
         equipmentError: `This equipment is not available as ${equipment.length} out of ${equipment.length} in inventory is in use on the date and time selected.`
