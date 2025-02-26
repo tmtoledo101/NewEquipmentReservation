@@ -67,8 +67,8 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
   // Basic information fields are always disabled
   const isBasicInfoDisabled = true;
   
-  // Department and Contact fields should be disabled in For Return tab
-  const isDepartmentContactDisabled = tabValue === 3;
+  // Department, Contact, and Remarks fields should be disabled in both For Release and For Return tabs
+  const isDepartmentContactDisabled = true; // Always disabled regardless of tab
   
   // Enable return fields editing when status is Completed
   const canEditReturnFields = currentStatus === 'Completed';
