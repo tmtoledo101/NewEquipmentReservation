@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Formik } from "formik";
 import { MuiPickersUtilsProvider } from '@material-ui/pickers';
 import DateFnsUtils from '@date-io/date-fns';
+import * as moment from 'moment';
 import { 
   DialogContent, 
   DialogActions,
@@ -102,42 +103,64 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
     }
   }, [setPendingValues, setShowConfirmation, setNotification, tabValue]);
 
-  const handleConfirm = React.useCallback(async (): Promise<void> => {
-    try {
-      if (!pendingValues || !selectedRequest) return;
-      
-      setIsSubmitting(true);
-      setShowConfirmation(false);
-      
-      await SharePointService.updateRequest(
-        selectedRequest.ID || 0,
-        pendingValues,
-        equipmentData,
-        files
-      );
-      
-      setNotification({
-        show: true,
-        message: "Request updated successfully",
-        severity: "success"
-      });
+const getCurrentAssetList = (): string[] => {
+  return equipmentData.reduce((prev: string[], current) => {
+    prev = [...current.assetNumber, ...prev];
+    return prev;
+  }, []);
+};
 
-      setTimeout(() => {
-        onUpdateSuccess();
-        onClose();
-      }, 1500);
-
-    } catch (error) {
-      setNotification({
-        show: true,
-        message: "Failed to update request. Please try again.",
-        severity: "error"
-      });
-    } finally {
-      setIsSubmitting(false);
-      setPendingValues(null);
+const handleConfirm = React.useCallback(async (): Promise<void> => {
+  try {
+    if (!pendingValues || !selectedRequest) return;
+    
+    setIsSubmitting(true);
+    setShowConfirmation(false);
+    
+    // If status is cancelled, update equipment items to make them available again
+    if (pendingValues.status === "Cancelled") {
+      try {
+        await SharePointService.updateEquipmentReturnStatus(
+          getCurrentAssetList(),
+          pendingValues.building,
+          pendingValues.borrowedFrom,
+          moment(pendingValues.fromDate).format("YYYY/MM/DD"),
+          pendingValues.time
+        );
+      } catch (error) {
+        console.error("Error updating equipment status:", error);
+      }
     }
-  }, [selectedRequest, pendingValues, setIsSubmitting, setShowConfirmation, equipmentData, files, setNotification, onUpdateSuccess, onClose, setPendingValues]);
+    
+    await SharePointService.updateRequest(
+      selectedRequest.ID || 0,
+      pendingValues,
+      equipmentData,
+      files
+    );
+    
+    setNotification({
+      show: true,
+      message: "Request updated successfully",
+      severity: "success"
+    });
+
+    setTimeout(() => {
+      onUpdateSuccess();
+      onClose();
+    }, 1500);
+
+  } catch (error) {
+    setNotification({
+      show: true,
+      message: "Failed to update request. Please try again.",
+      severity: "error"
+    });
+  } finally {
+    setIsSubmitting(false);
+    setPendingValues(null);
+  }
+}, [selectedRequest, pendingValues, setIsSubmitting, setShowConfirmation, equipmentData, files, setNotification, onUpdateSuccess, onClose, setPendingValues]);
 
   const handleBuilding = React.useCallback((e: any) => {
     const { value } = e.target;

@@ -474,6 +474,54 @@ export class SharePointService {
     }
   }
 
+  public static async updateEquipmentReturnStatus(
+    currentAssetList: string[],
+    building: string,
+    borrowedFrom: string,
+    releasedDate: string,
+    timeslot: string
+  ) {
+    try {
+      const equipmentData: any[] = await sp.web.lists
+        .getByTitle("NewEquipment")
+        .items.select(
+          "Building",
+          "BorrowedFrom/Department",
+          "Equiupment",
+          "AssetNumber",
+          "ID",
+          "BlockedDateAM",
+          "BlockedDatePM",
+          "BlockedDateWholeDay"
+        ).expand("BorrowedFrom/FieldValuesAsText")
+        .filter(`Building eq '${building}' and BorrowedFrom/Department eq '${borrowedFrom}'`)
+        .get();
+
+      const key = `BlockedDate${timeslot}`;
+      const filterEquipment = equipmentData.filter(item => currentAssetList.indexOf(item.AssetNumber) > -1);
+      
+      if (filterEquipment.length === 0) {
+        console.warn('No equipment found matching the asset list');
+        return;
+      }
+
+      const blockedDates = JSON.parse(filterEquipment[0][key]) || [];
+      const blockedDatesFilter = blockedDates.filter(item => item !== releasedDate);
+
+      const updatePromises = filterEquipment.map(item => {
+        const data = {
+          [key]: JSON.stringify(blockedDatesFilter)
+        };
+        return sp.web.lists.getByTitle('NewEquipment').items.getById(item.ID).update(data);
+      });
+
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error('Error in updateEquipmentReturnStatus:', error);
+      throw new Error(`Failed to update equipment status: ${error.message}`);
+    }
+  }
+
   public static async getEquipmentRequests(from: Date, to: Date, departments: string[], filterColumn: string = 'Department'): Promise<IEquipmentRequest[]> {
    // const fromDateStr = moment(from).startOf('day').utc().format("YYYY-MM-DD[T]00:00:00[Z]");
     //const toDateStr =   moment(to).endOf('day').utc().format("YYYY-MM-DD[T]23:59:59[Z]");
