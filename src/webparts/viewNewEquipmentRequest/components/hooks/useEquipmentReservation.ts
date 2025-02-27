@@ -116,9 +116,13 @@ export const useEquipmentReservation = (
           // Reset form to initial state
           formik.resetForm();
           
-          // Set form values
+          // Set form values with current user's title
           console.log('Setting formik values:', initialFormValues);
-          formik.setValues(initialFormValues);
+          formik.setValues({
+            ...initialFormValues,
+            releasedBy: user.Title,
+            returnedTo: user.Title
+          });
           console.log('Formik values after set:', formik.values);
 
           // Initialize borrowedFromList based on selected building

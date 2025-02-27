@@ -291,7 +291,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
               <div className={styles.label}>Released By</div>
               <CustomInput 
                 name="releasedBy" 
-                disabled={!canEditReleaseFields}
+                disabled={true}
               />
             </div>
           </Grid>
@@ -317,7 +317,7 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
               <div className={styles.label}>Returned To</div>
               <CustomInput 
                 name="returnedTo" 
-                disabled={!canEditReturnFields}
+                disabled={true}
               />
             </div>
           </Grid>
