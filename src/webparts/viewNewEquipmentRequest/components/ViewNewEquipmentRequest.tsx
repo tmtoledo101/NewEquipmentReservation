@@ -2,7 +2,7 @@ import * as React from 'react';
 import styles from './ViewNewEquipmentRequest.module.scss';
 import { IViewNewEquipmentRequestProps } from './IViewNewEquipmentRequestProps';
 import { IViewNewEquipmentRequestState } from './IViewNewEquipmentRequestState';
-import { Grid, Paper, AppBar, Tabs, Tab, Button } from "@material-ui/core";
+import { Grid, Paper, AppBar, Tabs, Tab, Button, CircularProgress } from "@material-ui/core";
 import CloseIcon from "@material-ui/icons/Close";
 import { SharePointService } from './services/SharePointService';
 import { SearchForm } from './common/SearchForm';
@@ -26,7 +26,8 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
       returnRequestList: [],
       department: [],
       departmentSectorMap: {},
-      showModal: false
+      showModal: false,
+      isLoading: false
     };
   }
 
@@ -47,8 +48,10 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
 
   private handleSearch = async (fromDate: Date, toDate: Date): Promise<void> => {
     const filterColumn = this.state.department.length > 0 ? "BorrowedFrom" : "Department";
-    console.log('handlesearch');  
+    console.log('handlesearch');
+    this.setState({ isLoading: true });
     await this.getItems(fromDate, toDate, filterColumn);
+    this.setState({ isLoading: false });
   }
 
   private handleViewAction = async (event: any, rowData: IEquipmentRequest): Promise<void> => {
@@ -70,6 +73,7 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
   }
 
   private async getItems(from: Date, to: Date, column: string = 'Department'): Promise<void> {
+    this.setState({ isLoading: true });
     let { department } = this.state;
     console.log(`GetItemdepartment:`,department, `departmentlenght`,department.length);
     if (department.length === 0) {
@@ -108,6 +112,7 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
       pastRequestList,
       releaseRequestList,
       returnRequestList,
+      isLoading: false
     });
   }
 
@@ -126,7 +131,7 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
   }
 
   public render(): React.ReactElement<IViewNewEquipmentRequestProps> {
-    const { tabValue, menuTabs, showModal } = this.state;
+    const { tabValue, menuTabs, showModal, isLoading } = this.state;
 
     return (
       <>
@@ -158,7 +163,12 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
             <SearchForm onSearch={this.handleSearch} />
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid item xs={12} style={{position: 'relative'}}>
+            {isLoading && (
+              <Grid item xs={12} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1, backgroundColor: 'rgba(255, 255, 255, 0.7)' }}>
+                <CircularProgress />
+              </Grid>
+            )}
             <Paper variant="outlined" className={styles.paper}>
               <EquipmentTable
                 title={headerObj[tabValue.toString()]}
