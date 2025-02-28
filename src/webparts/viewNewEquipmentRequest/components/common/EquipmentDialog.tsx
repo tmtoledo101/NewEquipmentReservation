@@ -42,36 +42,69 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
 }) => {
   if (!formik) return null;
   
-  // Local state to ensure immediate UI updates
-  const [localEquipment, setLocalEquipment] = React.useState<string>('');
-  const [localQuantity, setLocalQuantity] = React.useState<string>('');
+  // Use internal state to track selected values
+  const [selectedEquipment, setSelectedEquipment] = React.useState("");
+  const [selectedQuantity, setSelectedQuantity] = React.useState("");
   
-  // Debug log when dialog opens or formik values change
+  // Sync internal state with formik values when dialog opens or when formik values change
   React.useEffect(() => {
-    console.log("EquipmentDialog - Dialog opened or values changed");
-    console.log("formik.values.equipment:", formik.values.equipment);
-    console.log("formik.values.quantity:", formik.values.quantity);
-    console.log("formik.values.assetNumber:", formik.values.assetNumber);
-    console.log("equipmentList:", equipmentList);
-    console.log("quantityList:", quantityList);
+    console.log("Dialog effect - checking if state needs update");
     
-    // Update local state when formik values change
-    setLocalEquipment(formik.values.equipment || '');
-    setLocalQuantity(formik.values.quantity || '');
-  }, [open, formik.values.equipment, formik.values.quantity, formik.values.assetNumber, equipmentList, quantityList]);
+    // Only update if the values are different to avoid loops
+    if (formik.values.equipment && formik.values.equipment !== selectedEquipment) {
+      console.log("Updating selectedEquipment from formik:", formik.values.equipment);
+      setSelectedEquipment(formik.values.equipment);
+    }
+    
+    if (formik.values.quantity && formik.values.quantity !== selectedQuantity) {
+      console.log("Updating selectedQuantity from formik:", formik.values.quantity);
+      setSelectedQuantity(formik.values.quantity);
+    }
+  }, [formik.values.equipment, formik.values.quantity]);
   
-  // Enhanced handlers that update both local state and formik values
-  const handleEquipmentChangeWithLocalState = (e: any) => {
-    console.log("Equipment selected:", e.target.value);
+  // Additional effect to initialize state when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      console.log("Dialog opened - initializing state");
+      // Only set if not already set to avoid overwriting user selections
+      if (!selectedEquipment && formik.values.equipment) {
+        setSelectedEquipment(formik.values.equipment);
+      }
+      if (!selectedQuantity && formik.values.quantity) {
+        setSelectedQuantity(formik.values.quantity);
+      }
+    }
+  }, [open]);
+  
+  // Log current state with currentRecord
+  console.log("[DIALOG] Current state:", {
+    selectedEquipment,
+    selectedQuantity,
+    formikEquipment: formik.values.equipment,
+    formikQuantity: formik.values.quantity,
+    currentRecord: formik.values.currentRecord
+  });
+  
+  // Custom handlers that update internal state first, then call parent handlers
+  const handleEquipmentSelect = (e: any) => {
     const value = e.target.value;
-    setLocalEquipment(value);
+    console.log("[DIALOG] Equipment selected:", value);
+    
+    // Update internal state immediately
+    setSelectedEquipment(value);
+    
+    // Call parent handler
     handleEquipment(e);
   };
   
-  const handleQuantityChangeWithLocalState = (e: any) => {
-    console.log("Quantity selected:", e.target.value);
+  const handleQuantitySelect = (e: any) => {
     const value = e.target.value;
-    setLocalQuantity(value);
+    console.log("[DIALOG] Quantity selected:", value);
+    
+    // Update internal state immediately
+    setSelectedQuantity(value);
+    
+    // Call parent handler
     handleQuantity(e);
   };
 
@@ -101,8 +134,8 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
                 fullWidth
                 variant="standard"
                 name="equipment"
-                value={localEquipment}
-                onChange={handleEquipmentChangeWithLocalState}
+                value={selectedEquipment}
+                onChange={handleEquipmentSelect}
               >
                 <MenuItem value="">
                   <em>Select...</em>
@@ -129,8 +162,8 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
                 fullWidth
                 variant="standard"
                 name="quantity"
-                value={localQuantity}
-                onChange={handleQuantityChangeWithLocalState}
+                value={selectedQuantity}
+                onChange={handleQuantitySelect}
               >
                 <MenuItem value="">
                   <em>Select...</em>
@@ -148,9 +181,36 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
             <div style={{ marginBottom: '16px' }}>
               <div style={{ marginBottom: '8px' }}>Asset Number</div>
               <div style={{ border: '1px solid #ccc', padding: '8px', borderRadius: '4px', minHeight: '56px' }}>
-                {(formik.values.assetNumber || []).map((asset: string, index: number) => (
-                  <div key={index} style={{ margin: '4px 0' }}>{asset}</div>
-                ))}
+                {(() => {
+                  // Log asset information for debugging
+                  console.log("[DIALOG] Asset display logic:", {
+                    selectedQuantity,
+                    formikAssetNumber: formik.values.assetNumber,
+                    assetList,
+                    currentRecord: formik.values.currentRecord
+                  });
+                  
+                  // If we have asset numbers in formik values and it's an existing record (currentRecord > -1),
+                  // use those asset numbers directly
+                  if (formik.values.assetNumber && formik.values.assetNumber.length > 0 && formik.values.currentRecord > -1) {
+                    console.log("[DIALOG] Using existing asset numbers from formik");
+                    return formik.values.assetNumber.map((asset: string, index: number) => (
+                      <div key={index} style={{ margin: '4px 0' }}>{asset}</div>
+                    ));
+                  }
+                  // Otherwise, if quantity is selected, show asset numbers from assetList based on quantity
+                  else if (selectedQuantity) {
+                    console.log("[DIALOG] Using asset numbers from assetList based on quantity");
+                    return assetList.slice(0, parseInt(selectedQuantity)).map((asset: string, index: number) => (
+                      <div key={index} style={{ margin: '4px 0' }}>{asset}</div>
+                    ));
+                  }
+                  // Fallback to empty array if no asset numbers available
+                  else {
+                    console.log("[DIALOG] No asset numbers to display");
+                    return null;
+                  }
+                })()}
               </div>
             </div>
           </Grid>
@@ -160,7 +220,25 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
       <DialogActions>
         {formik.values.currentRecord > -1 && (
           <Button
-            onClick={() => onDelete(formik)}
+            onClick={() => {
+              console.log("[DIALOG] Delete button clicked with currentRecord:", formik.values.currentRecord);
+              
+              // Create a modified formik object with the selected values
+              const modifiedFormik = {
+                ...formik,
+                values: {
+                  ...formik.values,
+                  equipment: selectedEquipment,
+                  quantity: selectedQuantity,
+                  // Include selected asset numbers based on quantity
+                  assetNumber: selectedQuantity ? 
+                    assetList.slice(0, parseInt(selectedQuantity)) : 
+                    formik.values.assetNumber
+                }
+              };
+              
+              onDelete(modifiedFormik);
+            }}
             variant="contained"
             style={{ backgroundColor: '#f44336', color: 'white' }}
             startIcon={<DeleteIcon />}
@@ -169,7 +247,31 @@ export const EquipmentDialog: React.FC<IEquipmentDialogProps> = ({
           </Button>
         )}
         <Button
-          onClick={() => onSave(formik)}
+          onClick={() => {
+            // Pass the selected values to the onSave function
+            console.log("[DIALOG] Save button clicked with values:", {
+              selectedEquipment,
+              selectedQuantity
+            });
+            
+            // Create a modified formik object with the selected values
+            const modifiedFormik = {
+              ...formik,
+              values: {
+                ...formik.values,
+                equipment: selectedEquipment,
+                quantity: selectedQuantity,
+                // Include selected asset numbers based on quantity
+                assetNumber: selectedQuantity ? 
+                  assetList.slice(0, parseInt(selectedQuantity)) : 
+                  formik.values.assetNumber,
+                // Make sure to preserve the currentRecord value
+                currentRecord: formik.values.currentRecord
+              }
+            };
+            
+            onSave(modifiedFormik);
+          }}
           variant="contained"
           color="primary"
           startIcon={<SaveIcon />}

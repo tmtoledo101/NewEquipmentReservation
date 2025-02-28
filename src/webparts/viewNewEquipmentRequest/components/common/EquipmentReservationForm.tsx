@@ -315,7 +315,11 @@ const handleConfirm = React.useCallback(async (): Promise<void> => {
                     }
 
                     console.log("Setting currentRecord to:", index);
+                    // Set currentRecord directly in formik.values to ensure it's immediately available
+                    currentFormik.values.currentRecord = index;
+                    // Also use setFieldValue for consistency
                     currentFormik.setFieldValue("currentRecord", index);
+                    console.log("After setting currentRecord:", currentFormik.values.currentRecord);
                     
                     const building = currentFormik.values.building;
                     const borrowedFrom = currentFormik.values.borrowedFrom;
@@ -371,17 +375,21 @@ const handleConfirm = React.useCallback(async (): Promise<void> => {
                       console.log("Setting quantityList directly:", quantities);
                       setQuantityList(quantities);
                       
-                      // Set values with a small delay to ensure they're applied
-                      setTimeout(() => {
-                        currentFormik.setFieldValue("equipment", existingEquipmentData.equipment);
-                        currentFormik.setFieldValue("quantity", existingEquipmentData.quantity);
-                        currentFormik.setFieldValue("assetNumber", existingEquipmentData.assetNumber);
-                        
-                        console.log("After setting values - formik values:", currentFormik.values);
-                        
-                        // Show dialog after values are set
-                        setShowEquipmentDialog(true);
-                      }, 0);
+                      // IMPORTANT: First show the dialog, then set the values
+                      setShowEquipmentDialog(true);
+                      
+                      // Set values after dialog is shown
+                      console.log("DIRECTLY setting equipment value:", existingEquipmentData.equipment);
+                      currentFormik.values.equipment = existingEquipmentData.equipment;
+                      currentFormik.values.quantity = existingEquipmentData.quantity;
+                      currentFormik.values.assetNumber = existingEquipmentData.assetNumber;
+                      
+                      // Also use setFieldValue
+                      currentFormik.setFieldValue("equipment", existingEquipmentData.equipment);
+                      currentFormik.setFieldValue("quantity", existingEquipmentData.quantity);
+                      currentFormik.setFieldValue("assetNumber", existingEquipmentData.assetNumber);
+                      
+                      console.log("After setting values - formik values:", currentFormik.values);
                     } else {
                       console.log("availableEquipment is undefined or empty");
                       setNotification({
@@ -436,20 +444,35 @@ const handleConfirm = React.useCallback(async (): Promise<void> => {
       </Snackbar>
 
       {formikRef.current && showEquipmentDialog && (
-        <EquipmentDialogForm
-          open={showEquipmentDialog}
-          onClose={() => setShowEquipmentDialog(false)}
-          formik={formikRef.current}
-          equipmentList={equipmentList}
-          quantityList={quantityList}
-          assetList={assetList}
-          equipmentData={equipmentData}
-          buildEquipmentMap={buildEquipmentMap}
-          setEquipmentData={setEquipmentData}
-          setQuantityList={setQuantityList}
-          setAssetList={setAssetList}
-          setNotification={setNotification}
-        />
+        <>
+          {console.log("[LOG 26] Rendering EquipmentDialogForm with props:", {
+            equipmentList: equipmentList.map(item => item.value),
+            quantityList: quantityList.map(item => item.value),
+            assetList,
+            formikValues: {
+              equipment: formikRef.current.values.equipment,
+              quantity: formikRef.current.values.quantity,
+              assetNumber: formikRef.current.values.assetNumber
+            }
+          })}
+          <EquipmentDialogForm
+            open={showEquipmentDialog}
+            onClose={() => {
+              console.log("[LOG 27] Closing EquipmentDialogForm");
+              setShowEquipmentDialog(false);
+            }}
+            formik={formikRef.current}
+            equipmentList={equipmentList}
+            quantityList={quantityList}
+            assetList={assetList}
+            equipmentData={equipmentData}
+            buildEquipmentMap={buildEquipmentMap}
+            setEquipmentData={setEquipmentData}
+            setQuantityList={setQuantityList}
+            setAssetList={setAssetList}
+            setNotification={setNotification}
+          />
+        </>
       )}
       <ConfirmationDialogForm
         open={showConfirmation}
