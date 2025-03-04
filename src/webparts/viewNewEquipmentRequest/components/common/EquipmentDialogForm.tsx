@@ -37,7 +37,6 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
     console.log("[SAVE] Received formik instance:", formikInstance.values);
     
     // Get the values directly from the formik instance
-    // These values are now set by the EquipmentDialog component
     const equipment = formikInstance.values.equipment;
     const quantity = formikInstance.values.quantity;
     const assetNumber = formikInstance.values.assetNumber;
@@ -206,6 +205,7 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
     );
     
     console.log("[LOG 15] Available equipment:", availableEquipment.length);
+    console.log("[LOG 15.1] Available equipment details:", availableEquipment);
     
     if (availableEquipment.length === 0) {
       console.log("[LOG 16] No available equipment");
@@ -223,96 +223,108 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
       (_, i) => ({ id: (i + 1).toString(), value: (i + 1).toString() })
     );
     
-    // Get asset numbers
+    // Get asset numbers and update lists
     const assetNumbers = availableEquipment.map(item => item.assetNumber);
     
     console.log("[LOG 17] Setting quantity list:", quantities.map(q => q.value));
     console.log("[LOG 18] Setting asset list:", assetNumbers);
+    console.log("[LOG 18.1] Available equipment details:", availableEquipment);
     
     // Update state first
     setQuantityList(quantities);
     setAssetList(assetNumbers);
     
+    console.log("[LOG 18.2] State updated with new lists");
+
+    // For new records, also update formik's assetNumber field based on current quantity
+    if (formik.values.currentRecord === -1 && formik.values.quantity) {
+      const currentQuantity = parseInt(formik.values.quantity);
+      console.log("[LOG 18.3] Updating asset numbers for existing quantity:", {
+        currentQuantity,
+        assetNumbers
+      });
+      if (!isNaN(currentQuantity)) {
+        const selectedAssets = assetNumbers.slice(0, currentQuantity);
+        console.log("[LOG 18.4] Selected assets:", selectedAssets);
+        formik.setFieldValue("assetNumber", selectedAssets);
+      }
+    }
+    
     // If viewing an existing record, preserve the quantity and asset numbers
     if (formik.values.currentRecord > -1) {
+      console.log("[LOG 18.5] Preserving existing record values");
       formik.setFieldValue("equipment", value);
       return;
     }
 
     // For new records, clear quantity and asset numbers
+    console.log("[LOG 18.6] Clearing quantity and asset numbers for new record");
     formik.setFieldValue("equipment", value);
     formik.setFieldValue("quantity", "");
     formik.setFieldValue("assetNumber", []);
-    
-    // Log before setTimeout
-    console.log("[LOG 19.0] Before setTimeout - formik values:", {
-      equipment: formik.values.equipment,
-      quantity: formik.values.quantity,
-      assetNumber: formik.values.assetNumber
-    });
-    
-    // Force formik to update with a longer timeout
-    setTimeout(() => {
-      console.log("[LOG 19.1] Inside setTimeout - Before formik.handleChange");
-      
-      try {
-        formik.handleChange({
-          target: {
-            name: "equipment",
-            value: value
-          }
-        });
-        console.log("[LOG 19.2] After formik.handleChange");
-        
-        formik.validateForm();
-        console.log("[LOG 19.3] After formik.validateForm");
-        
-        // Check if the value was actually set
-        console.log("[LOG 19.4] Current formik values inside timeout:", {
-          equipment: formik.values.equipment,
-          quantity: formik.values.quantity,
-          assetNumber: formik.values.assetNumber
-        });
-        
-        // Try one more direct assignment
-        formik.values.equipment = value;
-        console.log("[LOG 19.5] After direct assignment inside timeout");
-      } catch (error) {
-        console.error("[ERROR] Error in setTimeout:", error);
-      }
-    }, 100); // Increased timeout to 100ms
-    
-    // This might execute before the setTimeout completes
-    console.log("[LOG 20] After setTimeout (but might execute before timeout completes):", {
-      equipment: formik.values.equipment,
-      quantity: formik.values.quantity,
-      assetNumber: formik.values.assetNumber
-    });
   };
 
-  // Simplified quantity change handler based on NewEquimentReservation.tsx
-  const handleQuantityChange = (e: any) => {
-    console.log("[LOG 21] EquipmentDialogForm - handleQuantityChange called");
+  // Enhanced quantity change handler with immediate asset number updates
+  const handleQuantityChange = async (e: any) => {
+    console.log("[LOG 21] EquipmentDialogForm - handleQuantityChange called", {
+      event: e,
+      currentFormikValues: formik.values,
+      assetList
+    });
+    
     const value = e.target.value;
     
     if (!formik || !formik.setFieldValue) {
-      console.log("[ERROR] Formik or setFieldValue is undefined");
+      console.error("[ERROR] Formik or setFieldValue is undefined");
       return;
     }
 
-    // If viewing an existing record, preserve the existing asset numbers
-    if (formik.values.currentRecord > -1) {
-      formik.setFieldValue("quantity", value);
-      // Keep existing asset numbers
-      return;
+    try {
+      const parsedValue = parseInt(value);
+      console.log("[LOG 22] Processing asset numbers:", {
+        parsedQuantity: parsedValue,
+        availableAssets: assetList,
+        isExistingRecord: formik.values.currentRecord > -1
+      });
+
+      // Set quantity without validation
+      await formik.setFieldValue("quantity", value, false);
+      
+      // Immediately calculate and set asset numbers
+      if (!isNaN(parsedValue) && assetList.length > 0) {
+        // Get the slice of asset numbers based on quantity
+        const selectedAssets = assetList.slice(0, parsedValue);
+        console.log("[LOG 23] Selected assets:", selectedAssets);
+        
+        // Set the asset numbers without validation
+        await formik.setFieldValue("assetNumber", selectedAssets, false);
+        
+        console.log("[LOG 24] Updated formik values:", {
+          quantity: value,
+          assetNumber: selectedAssets,
+          currentFormikValues: formik.values
+        });
+      } else {
+        console.log("[LOG 25] Invalid quantity or no assets available");
+        await formik.setFieldValue("assetNumber", [], false);
+      }
+      
+      // Force a re-render to update the UI
+      formik.setFieldTouched("quantity", true, false);
+      formik.setFieldTouched("assetNumber", true, false);
+      
+      console.log("[LOG 26] Final formik state:", {
+        values: formik.values,
+        touched: formik.touched
+      });
+    } catch (error) {
+      console.error("[ERROR] Failed to update quantity and asset numbers:", error);
+      setNotification({
+        show: true,
+        message: "Failed to update quantity and asset numbers",
+        severity: "error"
+      });
     }
-
-    // For new records, get asset numbers based on quantity
-    const assetListSlice = value ? assetList.slice(0, parseInt(value)) : [];
-    console.log("[LOG 22] Asset list slice:", assetListSlice);
-
-    formik.setFieldValue("quantity", value);
-    formik.setFieldValue("assetNumber", assetListSlice);
   };
 
   return (

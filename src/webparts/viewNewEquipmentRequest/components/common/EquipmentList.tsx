@@ -53,7 +53,13 @@ export const EquipmentList: React.FC<IEquipmentListProps> = ({
                 <tr key={index}>
                   <td>
                     <div 
-                      onClick={() => onView(index)}
+                      onClick={() => {
+                        console.log('Viewing equipment record:', {
+                          index,
+                          item
+                        });
+                        onView(index);
+                      }}
                       style={{ 
                         cursor: disabled ? 'default' : 'pointer',
                         opacity: disabled ? 0.5 : 1 

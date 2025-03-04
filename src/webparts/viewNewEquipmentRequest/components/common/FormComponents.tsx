@@ -106,6 +106,7 @@ export const Dropdown: React.FC<IDropdownProps> = ({
   value: propValue,
   ...props
 }) => {
+  const formik = useFormikContext();
   let formikField = null;
   let formikMeta = null;
   let formikHelpers = null;
@@ -117,26 +118,76 @@ export const Dropdown: React.FC<IDropdownProps> = ({
     formikHelpers = helpers;
   } catch (e) {
     // Not in Formik context
+    console.log('Dropdown not in Formik context:', name);
   }
+
+  // Enhanced debugging for multiple select
+  React.useEffect(() => {
+    if (multiple) {
+      console.log('Dropdown state:', {
+        name,
+        propValue,
+        formikValue: formikField && formikField.value,
+        items: items.map(i => i.value),
+        isMultiple: multiple,
+        isDisabled: disabled
+      });
+    }
+  }, [name, propValue,formikField && formikField.value
+    , items, multiple, disabled]);
+
 
   const handleDropdownChange = (e: React.ChangeEvent<any>) => {
     const value = e.target.value;
+    console.log('Dropdown change:', {
+      name,
+      value,
+      multiple,
+      hasFormik: !!formik,
+      currentValue: formikField ? formikField.value : ''
+    });
+    
+    // For multiple select, ensure value is always an array
+    const finalValue = multiple ? (Array.isArray(value) ? value : [value]) : value;
     
     // If we have Formik context, use it
     if (formikHelpers) {
-      formikHelpers.setValue(value);
+      formikHelpers.setValue(finalValue);
     }
     
     // Always call handleChange if provided
     if (handleChange) {
-      handleChange(e);
+      // Modify event to include the processed value
+      const modifiedEvent = {
+        ...e,
+        target: {
+          ...e.target,
+          value: finalValue
+        }
+      };
+      handleChange(modifiedEvent);
     }
   };
 
-  // Determine the current value
-  const value = propValue !== undefined ? propValue : 
-                formikField ? formikField.value : 
-                multiple ? [] : '';
+  // Determine the current value with enhanced type checking
+  let currentValue;
+  if (multiple) {
+    // For multiple select, ensure we always have an array
+    if (propValue !== undefined) {
+      currentValue = Array.isArray(propValue) ? propValue : [propValue].filter(Boolean);
+    } else if (formikField && formikField.value) {
+      currentValue = Array.isArray(formikField.value) ? formikField.value : [formikField.value].filter(Boolean);
+    } else {
+      currentValue = [];
+    }
+    
+    // Additional validation for array content
+    currentValue = currentValue.filter(v => v !== null && v !== undefined);
+  } else {
+    // For single select
+    currentValue = propValue !== undefined ? propValue : (formikField && formikField.value) || '';
+
+  }
 
   // Determine error state
   const error = formikMeta && formikMeta.touched && formikMeta.error;
@@ -149,27 +200,32 @@ export const Dropdown: React.FC<IDropdownProps> = ({
         error={error ? true : false}
         helperText={error || ''}
         disabled={disabled}
-        value={value}
+        value={currentValue}
         onChange={handleDropdownChange}
         variant="standard"
         fullWidth
         SelectProps={{
           multiple,
           renderValue: multiple ? 
-            (selected: any) => (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                {(selected as string[]).map((value) => (
-                  <div key={value} style={{ 
-                    background: '#e0e0e0',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontSize: '0.875rem'
-                  }}>
-                    {value}
-                  </div>
-                ))}
-              </div>
-            ) : undefined
+            (selected: any) => {
+              if (!Array.isArray(selected) || selected.length === 0) {
+                return <em>None selected</em>;
+              }
+              return (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {selected.map((value) => (
+                    <div key={value} style={{ 
+                      background: '#e0e0e0',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontSize: '0.875rem'
+                    }}>
+                      {value}
+                    </div>
+                  ))}
+                </div>
+              );
+            } : undefined
         }}
         {...props}
       >

@@ -452,26 +452,44 @@ const handleConfirm = React.useCallback(async (): Promise<void> => {
             formikValues: {
               equipment: formikRef.current.values.equipment,
               quantity: formikRef.current.values.quantity,
-              assetNumber: formikRef.current.values.assetNumber
+              assetNumber: formikRef.current.values.assetNumber,
+              currentRecord: formikRef.current.values.currentRecord
             }
           })}
-          <EquipmentDialogForm
-            open={showEquipmentDialog}
-            onClose={() => {
-              console.log("[LOG 27] Closing EquipmentDialogForm");
-              setShowEquipmentDialog(false);
-            }}
-            formik={formikRef.current}
-            equipmentList={equipmentList}
-            quantityList={quantityList}
-            assetList={assetList}
-            equipmentData={equipmentData}
-            buildEquipmentMap={buildEquipmentMap}
-            setEquipmentData={setEquipmentData}
-            setQuantityList={setQuantityList}
-            setAssetList={setAssetList}
-            setNotification={setNotification}
-          />
+          {(() => {
+            // Ensure asset numbers are initialized based on quantity
+            const currentQuantity = formikRef.current.values.quantity;
+            if (currentQuantity && assetList.length > 0) {
+              const parsedQuantity = parseInt(currentQuantity);
+              if (!isNaN(parsedQuantity)) {
+                const selectedAssets = assetList.slice(0, parsedQuantity);
+                if (JSON.stringify(selectedAssets) !== JSON.stringify(formikRef.current.values.assetNumber)) {
+                  console.log("[LOG 27] Initializing asset numbers:", selectedAssets);
+                  formikRef.current.setFieldValue("assetNumber", selectedAssets, false);
+                }
+              }
+            }
+            
+            return (
+              <EquipmentDialogForm
+                open={showEquipmentDialog}
+                onClose={() => {
+                  console.log("[LOG 28] Closing EquipmentDialogForm");
+                  setShowEquipmentDialog(false);
+                }}
+                formik={formikRef.current}
+                equipmentList={equipmentList}
+                quantityList={quantityList}
+                assetList={assetList}
+                equipmentData={equipmentData}
+                buildEquipmentMap={buildEquipmentMap}
+                setEquipmentData={setEquipmentData}
+                setQuantityList={setQuantityList}
+                setAssetList={setAssetList}
+                setNotification={setNotification}
+              />
+            );
+          })()}
         </>
       )}
       <ConfirmationDialogForm
