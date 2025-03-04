@@ -233,15 +233,13 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
     setQuantityList(quantities);
     setAssetList(assetNumbers);
     
-    // Try a different approach to update formik values
-    console.log("[LOG 19] Setting equipment value:", value);
-    
-    // Direct assignment to formik.values
-    formik.values.equipment = value;
-    formik.values.quantity = "";
-    formik.values.assetNumber = [];
-    
-    // Also use setFieldValue
+    // If viewing an existing record, preserve the quantity and asset numbers
+    if (formik.values.currentRecord > -1) {
+      formik.setFieldValue("equipment", value);
+      return;
+    }
+
+    // For new records, clear quantity and asset numbers
     formik.setFieldValue("equipment", value);
     formik.setFieldValue("quantity", "");
     formik.setFieldValue("assetNumber", []);
@@ -295,41 +293,26 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
   // Simplified quantity change handler based on NewEquimentReservation.tsx
   const handleQuantityChange = (e: any) => {
     console.log("[LOG 21] EquipmentDialogForm - handleQuantityChange called");
-    console.log("[LOG 22] Event value:", e.target.value);
-    console.log("[LOG 23] Current formik values BEFORE update:", {
-      equipment: formik.values.equipment,
-      quantity: formik.values.quantity,
-      assetNumber: formik.values.assetNumber
-    });
-    
     const value = e.target.value;
-    if (formik && formik.setFieldValue) {
-      // Store the current equipment value to preserve it
-      const currentEquipment = formik.values.equipment;
-      console.log("[LOG 23.1] Preserving equipment value:", currentEquipment);
-      
-      // Get asset list slice based on quantity
-      const assetListSlice = assetList.slice(0, parseInt(value));
-      console.log("[LOG 24] Asset list slice:", assetListSlice);
-      
-      // Update only quantity and assetNumber, not equipment
-      formik.setFieldValue("quantity", value);
-      formik.setFieldValue("assetNumber", assetListSlice);
-      
-      // Make sure equipment value is preserved
-      if (currentEquipment) {
-        console.log("[LOG 24.2] Ensuring equipment value is preserved:", currentEquipment);
-        formik.values.equipment = currentEquipment;
-      }
-      
-      console.log("[LOG 25] After setting values - formik values:", {
-        equipment: formik.values.equipment,
-        quantity: formik.values.quantity,
-        assetNumber: formik.values.assetNumber
-      });
-    } else {
+    
+    if (!formik || !formik.setFieldValue) {
       console.log("[ERROR] Formik or setFieldValue is undefined");
+      return;
     }
+
+    // If viewing an existing record, preserve the existing asset numbers
+    if (formik.values.currentRecord > -1) {
+      formik.setFieldValue("quantity", value);
+      // Keep existing asset numbers
+      return;
+    }
+
+    // For new records, get asset numbers based on quantity
+    const assetListSlice = value ? assetList.slice(0, parseInt(value)) : [];
+    console.log("[LOG 22] Asset list slice:", assetListSlice);
+
+    formik.setFieldValue("quantity", value);
+    formik.setFieldValue("assetNumber", assetListSlice);
   };
 
   return (

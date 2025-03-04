@@ -17,6 +17,8 @@ interface IDropdownProps {
   items: Array<{ id: string | number; value: string }>;
   handleChange?: (event: React.ChangeEvent<any>) => void;
   disabled?: boolean;
+  multiple?: boolean;
+  value?: string | string[];
 }
 
 export const CustomInput: React.FC<ICustomInputProps> = ({
@@ -100,37 +102,82 @@ export const Dropdown: React.FC<IDropdownProps> = ({
   items,
   handleChange,
   disabled = false,
+  multiple = false,
+  value: propValue,
   ...props
 }) => {
-  const [field, meta] = useField(name);
-  const { setFieldValue } = useFormikContext();
-  const hasError = meta.touched && !!meta.error;
+  let formikField = null;
+  let formikMeta = null;
+  let formikHelpers = null;
+
+  try {
+    const [field, meta, helpers] = useField(name);
+    formikField = field;
+    formikMeta = meta;
+    formikHelpers = helpers;
+  } catch (e) {
+    // Not in Formik context
+  }
 
   const handleDropdownChange = (e: React.ChangeEvent<any>) => {
     const value = e.target.value;
-    setFieldValue(name, value);
+    
+    // If we have Formik context, use it
+    if (formikHelpers) {
+      formikHelpers.setValue(value);
+    }
+    
+    // Always call handleChange if provided
     if (handleChange) {
       handleChange(e);
     }
   };
+
+  // Determine the current value
+  const value = propValue !== undefined ? propValue : 
+                formikField ? formikField.value : 
+                multiple ? [] : '';
+
+  // Determine error state
+  const error = formikMeta && formikMeta.touched && formikMeta.error;
 
   return (
     <FormControl fullWidth>
       <TextField
         select
         label={label}
-        error={hasError}
-        helperText={hasError ? meta.error : ''}
+        error={error ? true : false}
+        helperText={error || ''}
         disabled={disabled}
-        value={field.value || ''}
+        value={value}
         onChange={handleDropdownChange}
         variant="standard"
         fullWidth
+        SelectProps={{
+          multiple,
+          renderValue: multiple ? 
+            (selected: any) => (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {(selected as string[]).map((value) => (
+                  <div key={value} style={{ 
+                    background: '#e0e0e0',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '0.875rem'
+                  }}>
+                    {value}
+                  </div>
+                ))}
+              </div>
+            ) : undefined
+        }}
         {...props}
       >
-        <MenuItem value="">
-          <em>Select...</em>
-        </MenuItem>
+        {!multiple && (
+          <MenuItem value="">
+            <em>Select...</em>
+          </MenuItem>
+        )}
         {items.map((item) => (
           <MenuItem key={item.id} value={item.value}>
             {item.value}
