@@ -50,34 +50,34 @@ export const getAvailableEquipment = (
     const startDate = moment(fromDate);
     const endDate = moment(toDate);
     let isAvailable = true;
-
+    
     // Check each day in the range
     for (let date = startDate; date.isSameOrBefore(endDate); date.add(1, 'days')) {
-      const currentDate = date.format('YYYY-MM-DD');
-
-      // Check based on timeslot
-      if (timeslot === 'AM' && item.blockedDateAM === currentDate) {
+      const currentDate = date.format('YYYY/MM/DD');
+      
+      // Modified checks to use traditional null checks
+      if (timeslot === 'AM' && item.blockedDateAM && item.blockedDateAM.includes(currentDate)) {
         isAvailable = false;
         break;
       }
-      if (timeslot === 'PM' && item.blockedDatePM === currentDate) {
+      if (timeslot === 'PM' && item.blockedDatePM && item.blockedDatePM.includes(currentDate)) {
         isAvailable = false;
         break;
       }
       if (timeslot === 'Whole Day' && 
-         (item.blockedDateWholeDay === currentDate || 
-          item.blockedDateAM === currentDate || 
-          item.blockedDatePM === currentDate)) {
+         ((item.blockedDateWholeDay && item.blockedDateWholeDay.includes(currentDate)) || 
+          (item.blockedDateAM && item.blockedDateAM.includes(currentDate)) || 
+          (item.blockedDatePM && item.blockedDatePM.includes(currentDate)))) {
         isAvailable = false;
         break;
       }
       if ((timeslot === 'AM' || timeslot === 'PM') && 
-          item.blockedDateWholeDay === currentDate) {
+          item.blockedDateWholeDay && item.blockedDateWholeDay.includes(currentDate)) {
         isAvailable = false;
         break;
       }
     }
-
+    console.log('isAvailable:', isAvailable);
     return isAvailable;
   });
 };

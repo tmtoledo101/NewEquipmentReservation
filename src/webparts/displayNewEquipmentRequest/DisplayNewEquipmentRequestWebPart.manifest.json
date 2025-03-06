@@ -18,7 +18,7 @@
     "groupId": "5c03119e-3074-46fd-976b-c60198311f70", // Other
     "group": { "default": "Other" },
     "title": { "default": "displayNewEquipmentReques_2025" },
-    "description": { "default": "displayNewEquipmentRequest description" },
+    "description": { "default": " This web part functions as a detailed viewer, showing all the specific information about a single equipment request. When users need to see the complete details of a reservation, including status, equipment specifications, and any associated comments or approval information, this is where they would look." },
     "officeFabricIconFontName": "Page",
     "properties": {
       "description": "displayNewEquipmentRequest"

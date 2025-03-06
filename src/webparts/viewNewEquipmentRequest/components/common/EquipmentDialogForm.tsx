@@ -206,8 +206,7 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
     
     console.log("[LOG 15] Available equipment:", availableEquipment.length);
     console.log("[LOG 15.1] Available equipment details:", availableEquipment);
-    
-    if (availableEquipment.length === 0) {
+    if(availableEquipment.length === 0) {
       console.log("[LOG 16] No available equipment");
       setNotification({
         show: true,

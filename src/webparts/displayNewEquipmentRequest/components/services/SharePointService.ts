@@ -176,7 +176,7 @@ export class SharePointService {
   public static async uploadFiles(guid: string, files: File[]) {
     const docLibrary = "NewEquipmentRequestDocs";
     const f = configService.isDevUser() ? "/sites/ResourceReservationDev" :"/sites/ResourceReservation" + "/" + docLibrary +"/" + guid;
-    await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.getByName(guid).delete();
+    //await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.getByName(guid).delete();
     await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.add(guid);
 
     const uploadPromises = files.map(file => {

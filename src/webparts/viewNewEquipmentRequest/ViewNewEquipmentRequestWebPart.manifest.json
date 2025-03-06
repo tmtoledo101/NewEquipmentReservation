@@ -18,7 +18,7 @@
     "groupId": "5c03119e-3074-46fd-976b-c60198311f70", // Other
     "group": { "default": "Other" },
     "title": { "default": "viewNewEquipmentRequest_2025" },
-    "description": { "default": "viewNewEquipmentRequest description" },
+    "description": { "default": " It presents users with a comprehensive list view of all equipment requests, both pending and approved. Users can easily track their requests, filter through different items, and get a quick overview of all reservations in the system." },
     "officeFabricIconFontName": "Page",
     "properties": {
       "description": "viewNewEquipmentRequest"
