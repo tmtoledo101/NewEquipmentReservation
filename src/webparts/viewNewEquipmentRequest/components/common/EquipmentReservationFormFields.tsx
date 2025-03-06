@@ -176,6 +176,16 @@ const EquipmentReservationFormFieldsBase: React.FC<IEquipmentReservationFormFiel
             name="department"
             disabled={isDepartmentContactDisabled}
           />
+          {/* Log department value for debugging */}
+          {formik && formik.values && formik.values.department && (
+            <div style={{ display: 'none' }}>
+              {/* Using a self-invoking function to avoid returning void */}
+              {(() => {
+                console.log('Department value in form:', formik.values.department);
+                return null;
+              })()}
+            </div>
+          )}
         </div>
       </Grid>
 

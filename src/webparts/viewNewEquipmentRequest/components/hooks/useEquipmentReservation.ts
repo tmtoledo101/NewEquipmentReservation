@@ -102,8 +102,20 @@ export const useEquipmentReservation = (
 
         if (!mounted) return;
 
+        // Ensure the selected request's department is included in the department list
+        let updatedDepartmentList = [...departmentsResponse.departments];
+        
+        // If the selected request has a department and it's not already in the list, add it
+        if (selectedRequest && selectedRequest.department && 
+            !updatedDepartmentList.some(dept => dept.value === selectedRequest.department)) {
+          updatedDepartmentList.push({
+            id: selectedRequest.department,
+            value: selectedRequest.department
+          });
+        }
+        
         // Update state with fetched data
-        setDepartmentList(departmentsResponse.departments);
+        setDepartmentList(updatedDepartmentList);
         setDepartmentSectorMap(departmentsResponse.departmentSectorMap);
         setBuildingList(equipmentResponse.buildingList);
         setBuildBorrowedMap(equipmentResponse.buildBorrowedMap);

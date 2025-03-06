@@ -186,7 +186,17 @@ export const Dropdown: React.FC<IDropdownProps> = ({
   } else {
     // For single select
     currentValue = propValue !== undefined ? propValue : (formikField && formikField.value) || '';
-
+    
+    // Log for debugging department dropdown
+    if (name === 'department') {
+      console.log('Department dropdown value:', {
+        currentValue,
+        propValue,
+        formikValue: formikField && formikField.value,
+        items: items.map(i => i.value),
+        hasMatchingItem: items.some(i => i.value === currentValue)
+      });
+    }
   }
 
   // Determine error state
