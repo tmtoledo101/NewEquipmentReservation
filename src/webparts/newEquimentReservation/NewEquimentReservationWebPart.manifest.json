@@ -1,6 +1,6 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
-  "id": "4719a16c-e54f-45ba-9bb7-a6429ca6caac",
+  "id": "0b546d93-8214-4107-a892-808e039fee66",
   "alias": "NewEquimentReservationWebPart",
   "componentType": "WebPart",
   "version": "*",
