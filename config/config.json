@@ -2,35 +2,35 @@
   "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
   "version": "2.0",
   "bundles": {
-    "res-reservation-web-part": {
+    "new-equiment-reservation-web-part": {
       "components": [
         {
-          "entrypoint": "./lib/webparts/resReservation/ResReservationWebPart.js",
-          "manifest": "./src/webparts/resReservation/ResReservationWebPart.manifest.json"
+          "entrypoint": "./lib/webparts/newEquimentReservation/NewEquimentReservationWebPart.js",
+          "manifest": "./src/webparts/newEquimentReservation/NewEquimentReservationWebPart.manifest.json"
         }
       ]
     },
-    "res-display-web-part": {
+    "view-new-equipment-request-web-part": {
       "components": [
         {
-          "entrypoint": "./lib/webparts/resDisplay/ResDisplayWebPart.js",
-          "manifest": "./src/webparts/resDisplay/ResDisplayWebPart.manifest.json"
+          "entrypoint": "./lib/webparts/viewNewEquipmentRequest/ViewNewEquipmentRequestWebPart.js",
+          "manifest": "./src/webparts/viewNewEquipmentRequest/ViewNewEquipmentRequestWebPart.manifest.json"
         }
       ]
     },
-    "res-views-web-part": {
+    "display-new-equipment-request-web-part": {
       "components": [
         {
-          "entrypoint": "./lib/webparts/resViews/ResViewsWebPart.js",
-          "manifest": "./src/webparts/resViews/ResViewsWebPart.manifest.json"
+          "entrypoint": "./lib/webparts/displayNewEquipmentRequest/DisplayNewEquipmentRequestWebPart.js",
+          "manifest": "./src/webparts/displayNewEquipmentRequest/DisplayNewEquipmentRequestWebPart.manifest.json"
         }
       ]
     }
   },
   "externals": {},
   "localizedResources": {
-    "ResReservationWebPartStrings": "lib/webparts/resReservation/loc/{locale}.js",
-    "ResDisplayWebPartStrings": "lib/webparts/resDisplay/loc/{locale}.js",
-    "ResViewsWebPartStrings": "lib/webparts/resViews/loc/{locale}.js"
+    "NewEquimentReservationWebPartStrings": "lib/webparts/newEquimentReservation/loc/{locale}.js",
+    "ViewNewEquipmentRequestWebPartStrings": "lib/webparts/viewNewEquipmentRequest/loc/{locale}.js",
+    "DisplayNewEquipmentRequestWebPartStrings": "lib/webparts/displayNewEquipmentRequest/loc/{locale}.js"
   }
 }

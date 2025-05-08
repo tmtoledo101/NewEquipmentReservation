@@ -1,0 +1,20 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "0b546d93-8214-4107-a892-808e039fee66",
+  "alias": "NewEquimentReservationWebPart",
+  "componentType": "WebPart",
+  "version": "*",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "supportedHosts": ["SharePointWebPart"],
+  "preconfiguredEntries": [{
+    "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
+    "group": { "default": "Other" },
+    "title": { "default": "New Equipment Reservation_2025" },
+    "description": { "default": "This web part enables users to create new equipment reservation requests. Users can select equipment items, specify their desired reservation time slots, and submit their requests for processing. It serves as the entry point for all new equipment bookings in the system." },
+    "officeFabricIconFontName": "Page",
+    "properties": {
+      "description": "newEquimentReservation"
+    }
+  }]
+}

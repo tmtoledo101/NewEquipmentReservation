@@ -1,0 +1,61 @@
+@import '~office-ui-fabric-react/dist/sass/References.scss';
+
+.width {
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 16px;
+}
+
+.label {
+  font-weight: $ms-font-weight-semibold;
+  font-size: $ms-font-size-m;
+  height: 32px;
+  line-height: 32px;
+  margin: 0 4px;
+  vertical-align: top;
+  display: inline-block;
+}
+
+.dropZone {
+  min-height: 140px !important;
+}
+
+.previewChip {
+  min-width: 160px;
+  max-width: 210px;
+  margin: 4px;
+}
+
+.formHandle {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  button {
+    margin-left: 20px;
+  }
+}
+
+.equipmentDetails {
+  padding: 0 20px;
+  margin-top: 20px;
+}
+
+.data {
+  width: 100%;
+  button {
+    margin-top: 10px;
+  }
+}
+
+.disabledDropzone {
+  min-height: 140px;
+  border: 2px dashed #ccc;
+  background-color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+  border-radius: 4px;
+}
