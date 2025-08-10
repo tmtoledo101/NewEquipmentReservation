@@ -45,3 +45,13 @@ export const generateBlockedDates = (startDate: Date | string, days: number): st
   
   return blockedDates;
 };
+export const cleanSiteUrl = (url: string): string => {
+  try {
+    // Method 1: Using URL object
+    const urlObj = new URL(url);
+    return urlObj.pathname;
+  } catch {
+    // Method 2: Fallback to string manipulation
+    return url.replace(/^https?:\/\/[^\/]+/, '');
+    }
+};

@@ -14,17 +14,17 @@ export class SharePointService {
     const user = await sp.web.currentUser.get();
 
     const currentUser = {
-      Email: isDevelopmentMode()? user.Title : user.Email,
+      Email:  user.Email,
       Title: user.Title
     };
     return currentUser;
   }
 
-  public static async getDepartments(email: string) {
+public static async getDepartments(email: string) {
     let allDepartmentData: any[] = [];
     
-    // Initial page request
-    const employeeEmailTitle =isDevelopmentMode()? "EmployeeName/Title":"EmployeeName/EMail";
+    // Initial page request (removed .filter from the query)
+    const employeeEmailTitle = "EmployeeName/EMail";
     let page = await sp.web.lists
       .getByTitle("EquipUsersPerDepartment")
       .items.select(
@@ -32,12 +32,11 @@ export class SharePointService {
         "Department/Department",
         "Department/Sector"
       )
-      .filter(`${employeeEmailTitle} eq '${email}'`)
       .expand(
         "Department/FieldValuesAsText",
         employeeEmailTitle
       )
-      .top(1000) // Process 100 items at a time
+      .top(6000) // Process 1000 items at a time
       .getPaged();
 
     // Add first page results
@@ -49,14 +48,19 @@ export class SharePointService {
       allDepartmentData = [...allDepartmentData, ...page.results];
     }
 
-    if (allDepartmentData.length === 0) {
+    // Now filter in memory by email
+    const filteredDepartmentData = allDepartmentData.filter(item => 
+      item.EmployeeName && item.EmployeeName.EMail && item.EmployeeName.EMail.toLowerCase() === email.toLowerCase()
+    );
+
+    if (filteredDepartmentData.length === 0) {
       throw new Error('User details is not present in department list, kindly contact admin.');
     }
 
-    const departments = allDepartmentData.map(item => item.Department.Department);
+    const departments = filteredDepartmentData.map(item => item.Department.Department);
     const departmentSectorMap = {};
     
-    allDepartmentData.forEach(item => {
+    filteredDepartmentData.forEach(item => {
       if (!departmentSectorMap[item.Department.Department]) {
         departmentSectorMap[item.Department.Department] = item.Department.Sector;
       }
@@ -152,7 +156,7 @@ public static async getEquipments() {
       .update(data);
   }
 
-  public static async createRequest(formData: any, equipmentData: IEquipmentData[], files: File[], requestorEmail: string) {
+  public static async createRequest(formData: any, equipmentData: IEquipmentData[], files: File[], requestorEmail: string, siteUrl: string) {
     const itemLength: any = await sp.web.lists
       .getByTitle('NewEquipmentRequestList')
       .items
@@ -192,9 +196,10 @@ public static async getEquipments() {
       if (files.length > 0) {
         const docLibrary = "NewEquipmentRequestDocs";
         const _itemId = item.data.ID;
-        const environment = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation";
-        const f = environment + "/" + docLibrary + "/" + item.data.GUID;
-        
+        //const environment = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation";
+        //const environment = siteUrl + "/sites/ResourceReservation";
+        const f = siteUrl + "/" + docLibrary + "/" + item.data.GUID;
+        console.log("f", f);
         await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.add(item.data.GUID)
           .then(r => {
             Promise.all(files.map((file) => {

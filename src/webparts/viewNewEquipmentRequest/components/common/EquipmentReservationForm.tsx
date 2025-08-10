@@ -21,7 +21,7 @@ import { equipmentReservationSchema } from '../utils/validation';
 import { useEquipmentReservation } from '../hooks/useEquipmentReservation';
 import { EquipmentReservationFormFields } from './EquipmentReservationFormFields';
 import { ConfirmationDialogForm } from './ConfirmationDialogForm';
-import { handleEquipmentSelection } from '../utils/helpers';
+import { handleEquipmentSelection, cleanSiteUrl } from '../utils/helpers';
 import styles from './EquipmentReservationForm.module.scss';
 
 interface IEquipmentReservationFormProps {
@@ -78,9 +78,9 @@ export const EquipmentReservationForm: React.FC<IEquipmentReservationFormProps> 
     const requiredFields = ['requestedBy', 'department', 'contactNumber', 'building', 'borrowedFrom', 'time', 'status'];
     
     if (tabValue === 2) { // For Release tab
-      requiredFields.push('releasedTo', 'releasedBy', 'releaseRemarks');
+      requiredFields.push('releasedTo', 'releasedBy');
     } else if (tabValue === 3) { // For Return tab
-      requiredFields.push('returnedTo', 'returnedBy', 'returnRemarks');
+      requiredFields.push('returnedTo', 'returnedBy');
     }
     
     // Touch all required fields to ensure their validation messages show
@@ -118,7 +118,7 @@ const handleConfirm = React.useCallback(async (): Promise<void> => {
     setShowConfirmation(false);
     
     // If status is cancelled, update equipment items to make them available again
-    if (pendingValues.status === "Cancelled") {
+    if (pendingValues.status === "Cancelled" || pendingValues.status === "Completed") {
       try {
         await SharePointService.updateEquipmentReturnStatus(
           getCurrentAssetList(),
@@ -131,12 +131,13 @@ const handleConfirm = React.useCallback(async (): Promise<void> => {
         console.error("Error updating equipment status:", error);
       }
     }
-    
+
     await SharePointService.updateRequest(
       selectedRequest.ID || 0,
       pendingValues,
       equipmentData,
-      files
+      files,
+      cleanSiteUrl(siteUrl),
     );
     
     setNotification({

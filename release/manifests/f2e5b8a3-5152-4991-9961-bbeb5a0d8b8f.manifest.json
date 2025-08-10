@@ -34,7 +34,7 @@
     "scriptResources": {
       "display-new-equipment-request-web-part": {
         "type": "path",
-        "path": "display-new-equipment-request-web-part_3e710225b08f4eae6e01.js"
+        "path": "display-new-equipment-request-web-part_a5a8d033e5b92a589636.js"
       },
       "@microsoft/sp-loader": {
         "type": "component",

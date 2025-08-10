@@ -3,9 +3,19 @@
   "solution": {
     "name": "res-EquipmentReservation_2025-client-side-solution",
     "id": "2a5c4fe3-0a16-4ab2-8c6f-dee98240e392",
-    "version": "2.0.0.2",
+    "version": "2.0.0.8",
     "includeClientSideAssets": true,
-    "isDomainIsolated": false
+    "isDomainIsolated": false,
+    "webApiPermissionRequests": [
+      {
+        "resource": "Microsoft Graph",
+        "scope": "Group.Read.All"
+      },
+      {
+        "resource": "Microsoft Graph",
+        "scope": "GroupMember.Read.All"
+      }
+    ]
   },
   "paths": {
     "zippedPackage": "solution/res-EquipmentReservation_2025.sppkg"

@@ -7,7 +7,7 @@ import CloseIcon from "@material-ui/icons/Close";
 import { SharePointService } from './services/SharePointService';
 import { SearchForm } from './common/SearchForm';
 import { EquipmentTable } from './common/EquipmentTable';
-import { headerObj, STATUS } from './utils/helpers';
+import { cleanSiteUrl, headerObj, STATUS } from './utils/helpers';
 import { IEquipmentRequest } from './interfaces/IEquipmentRequest';
 import { EquipmentReservationForm } from './common/EquipmentReservationForm';
 import { de } from 'date-fns/locale';
@@ -59,7 +59,7 @@ export default class ViewNewEquipmentRequest extends React.Component<IViewNewEqu
       window.open(`${this.props.siteUrl}/SitePages/DisplayEquipmentReservation_appge.aspx?pid=${rowData.ID}`, "_blank");
     } else {
       // For Release (tab 2) or Return (tab 3), get attachments before showing modal
-      const attachments = await SharePointService.getRequestAttachments(rowData.ID);
+      const attachments = await SharePointService.getRequestAttachments(rowData.ID, cleanSiteUrl(this.props.siteUrl));
       this.selectedRequest = {
         ...rowData,
         attachments

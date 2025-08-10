@@ -34,3 +34,13 @@ export const mapArrayToObject = (obj: { [key: string]: any }) =>
   Object.keys(obj).map((item) => {
     return { id: item, value: item };
   });
+export const cleanSiteUrl = (url: string): string => {
+  try {
+    // Method 1: Using URL object
+    const urlObj = new URL(url);
+    return urlObj.pathname;
+  } catch {
+    // Method 2: Fallback to string manipulation
+    return url.replace(/^https?:\/\/[^\/]+/, '');
+    }
+};

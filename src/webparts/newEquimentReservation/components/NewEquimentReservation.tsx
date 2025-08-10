@@ -7,7 +7,7 @@ import { Grid, Button } from "@material-ui/core";
 import CloseIcon from "@material-ui/icons/Close";
 import SaveIcon from "@material-ui/icons/Save";
 import { DropzoneArea } from "material-ui-dropzone";
-import { FSS } from './utils/helpers';
+import { FSS, cleanSiteUrl } from './utils/helpers';
 import { equipmentReservationSchema } from './utils/validation';
 import { SharePointService } from './services/SharePointService';
 import { CustomInput, CustomDateTimePicker, Dropdown } from './common/FormComponents';
@@ -62,7 +62,7 @@ export default class NewEquimentReservation extends React.Component<INewEquiment
 
   private getLoggedinUser = async () => {
     const user = await SharePointService.getCurrentUser();
-    this.inputRef.current.setFieldValue("requestedBy", user.Email);
+    this.inputRef.current.setFieldValue("requestedBy", user.Title);
     this.setState({ requestorEmail: user.Email });
   }
 
@@ -207,7 +207,8 @@ export default class NewEquimentReservation extends React.Component<INewEquiment
           finalResult,
           this.state.equipmentData,
           this.state.files,
-          this.state.requestorEmail
+          this.state.requestorEmail,
+          cleanSiteUrl(this.props.siteUrl)
         );
 
         this.setState({ isSavingDone: true });

@@ -154,7 +154,8 @@ export class SharePointService {
     id: number,
     values: any,
     equipmentData: any[],
-    files: File[]
+    files: File[], 
+    siteUrl: string
   ): Promise<void> {
     try {
       const currentUser = await this.getCurrentUser();
@@ -234,8 +235,9 @@ export class SharePointService {
 
         // Upload files to document library
         const docLibrary = "NewEquipmentRequestDocs";
-        const environment = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation";
-        const folderPath = environment + "/" + docLibrary + "/" + request.GUID;
+        //const environment = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation";
+        //const environment = siteUrl + "/sites/ResourceReservation";
+        const folderPath = siteUrl + "/" + docLibrary + "/" + request.GUID;
 
         console.log('Guid:', request.GUID);
         //await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.getByName(request.GUID).delete();
@@ -279,24 +281,22 @@ export class SharePointService {
     const user = await sp.web.currentUser.get();
     
     const currentUserProp = {
-      Email: isDevelopmentMode()? user.Title : user.Email,
+      Email: user.Email,
       Title: user.Title
     };
     console.log("currentUserprop",currentUserProp.Email);
     return currentUserProp;
   }
 
-  public static async getDepartments(email: string): Promise<{
+ public static async getDepartments(email: string): Promise<{
     departments: { id: string; value: string }[];
     departmentSectorMap: { [key: string]: string };
   }> {
     let allDepartmentData: any[] = [];
     
-    // Initial page request
-    const  employeeTitleEmail = isDevelopmentMode()? "EmployeeName/Title":"EmployeeName/EMail";
-    console.log("employeeTitleEmail:", employeeTitleEmail,
-      "Email:" ,email
-    );
+    // Initial page request (no filter in SP query)
+    const employeeTitleEmail = "EmployeeName/EMail";
+    console.log("employeeTitleEmail:", employeeTitleEmail, "Email:", email);
     let page = await sp.web.lists
       .getByTitle("EquipUsersPerDepartment")
       .items.select(
@@ -304,7 +304,6 @@ export class SharePointService {
         "Department/Department",
         "Department/Sector"
       )
-      .filter(`${employeeTitleEmail} eq '${email}'`)
       .expand(
         "Department/FieldValuesAsText",
         employeeTitleEmail
@@ -322,15 +321,22 @@ export class SharePointService {
       allDepartmentData = [...allDepartmentData, ...page.results];
     }
 
-    console.log(`Total departments retrieved:`, allDepartmentData.length);
+    // Now filter in memory by email
+    const filteredDepartmentData = allDepartmentData.filter(item =>
+      item.EmployeeName &&
+      item.EmployeeName.EMail &&
+      item.EmployeeName.EMail.toLowerCase() === email.toLowerCase()
+    );
+
+    console.log(`Total departments retrieved:`, filteredDepartmentData.length);
 
     const departmentSectorMap = {};
-    allDepartmentData.forEach(item => {
+    filteredDepartmentData.forEach(item => {
       departmentSectorMap[item.Department.Department] = item.Department.Sector;
     });
 
     return {
-      departments: allDepartmentData.map(item => ({
+      departments: filteredDepartmentData.map(item => ({
         id: item.Department.Department,
         value: item.Department.Department
       })),
@@ -345,7 +351,7 @@ export class SharePointService {
     try {
       let allEquipmentList: any[] = [];
       
-      const equipmentTitleEmail = isDevelopmentMode()? "EquipmentOwner/Title" : "EquipmentOwner/EMail";
+      const equipmentTitleEmail = "EquipmentOwner/EMail";
       // Initial page request
       let page = await sp.web.lists
         .getByTitle("EquipmentOwner")
@@ -450,7 +456,7 @@ export class SharePointService {
     });
   }
 
-  public static async getRequestAttachments(requestId: number): Promise<string[]> {
+  public static async getRequestAttachments(requestId: number, siteUrl: string): Promise<string[]> {
     try {
       // First get the request's GUID
       const request = await sp.web.lists
@@ -461,8 +467,9 @@ export class SharePointService {
 
       // Get files from the GUID folder in the document library
       const docLibrary = "NewEquipmentRequestDocs";
-      const environment = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation";
-      const folderPath = environment + "/" + docLibrary + "/" + request.GUID;
+      //const environment = configService.isDevUser() ? "/sites/ResourceReservationDev" : "/sites/ResourceReservation";
+      //const environment = siteUrl +  "/sites/ResourceReservation";
+      const folderPath = siteUrl + "/" + docLibrary + "/" + request.GUID;
 
       const folder = sp.web.getFolderByServerRelativeUrl(folderPath);
       const files = await folder.files.get();
@@ -473,8 +480,7 @@ export class SharePointService {
       return [];
     }
   }
-
-  public static async updateEquipmentReturnStatus(
+public static async updateEquipmentReturnStatus(
     currentAssetList: string[],
     building: string,
     borrowedFrom: string,
@@ -482,7 +488,10 @@ export class SharePointService {
     timeslot: string
   ) {
     try {
-      const equipmentData: any[] = await sp.web.lists
+      let allEquipmentData: any[] = [];
+
+      // Fetch all equipment items without filter
+      let page = await sp.web.lists
         .getByTitle("NewEquipment")
         .items.select(
           "Building",
@@ -493,9 +502,26 @@ export class SharePointService {
           "BlockedDateAM",
           "BlockedDatePM",
           "BlockedDateWholeDay"
-        ).expand("BorrowedFrom/FieldValuesAsText")
-        .filter(`Building eq '${building}' and BorrowedFrom/Department eq '${borrowedFrom}'`)
-        .get();
+        )
+        .expand("BorrowedFrom/FieldValuesAsText")
+        .top(100) // Process 100 items at a time
+        .getPaged();
+
+      // Add first page results
+      allEquipmentData = [...allEquipmentData, ...page.results];
+
+      // Get subsequent pages if they exist
+      while (page.hasNext) {
+        page = await page.getNext();
+        allEquipmentData = [...allEquipmentData, ...page.results];
+      }
+
+      // Now filter in memory by building and borrowedFrom
+      const equipmentData = allEquipmentData.filter(item =>
+        item.Building === building &&
+        item.BorrowedFrom &&
+        item.BorrowedFrom.Department === borrowedFrom
+      );
 
       const key = `BlockedDate${timeslot}`;
       const filterEquipment = equipmentData.filter(item => currentAssetList.indexOf(item.AssetNumber) > -1);
@@ -523,22 +549,13 @@ export class SharePointService {
   }
 
   public static async getEquipmentRequests(from: Date, to: Date, departments: string[], filterColumn: string = 'Department'): Promise<IEquipmentRequest[]> {
-   // const fromDateStr = moment(from).startOf('day').utc().format("YYYY-MM-DD[T]00:00:00[Z]");
-    //const toDateStr =   moment(to).endOf('day').utc().format("YYYY-MM-DD[T]23:59:59[Z]");
-    
-    const dateRange = `(FromDate ge datetime'${moment(from).startOf('day').toISOString()}' and ToDate le datetime'${moment(to).endOf('day').toISOString()}')`;
-    console.log(`departments:`,departments);
-    let filterQuery = dateRange;
-    if (departments && departments.length > 0) {
-      const deptQuery = departments
-        .map(dept => `${filterColumn} eq '${dept.replace(/'/g, "''")}'`)
-        .join(' or ');
-      filterQuery += ` and (${deptQuery})`;
-    }
-    console.log(`filterQuery:`,filterQuery);
+    // Format input dates to 'YYYY-MM-DD' for date-only comparison
+    const fromDateStr = moment(from).format('YYYY-MM-DD');
+    const toDateStr = moment(to).format('YYYY-MM-DD');
+
     let allRequestItems: any[] = [];
-    
-    // Initial page request
+
+    // Fetch all items without filter
     let page = await sp.web.lists
       .getByTitle("NewEquipmentRequestList")
       .items.select(
@@ -560,11 +577,11 @@ export class SharePointService {
         "ReleasedBy",
         "ReleaseRemarks",
         "DateCompleted",
+        //"Date_x0020_Completed",
         "BorrowedFrom",
         "Remarks",
         "GUID"  // Explicitly select GUID field
       )
-      .filter(filterQuery)
       .orderBy("Id", false)
       .top(100)  // Process 100 items at a time
       .getPaged();
@@ -578,8 +595,30 @@ export class SharePointService {
       allRequestItems = [...allRequestItems, ...page.results];
     }
 
-      console.log(`requestItems:`,allRequestItems);
-    return allRequestItems.map(item => ({
+    // Now filter in memory by date and department
+    const filteredItems = allRequestItems.filter(item => {
+      // Format item's FromDate and ToDate to 'YYYY-MM-DD'
+      const itemFromDate = item.FromDate ? moment(item.FromDate).format('YYYY-MM-DD') : null;
+      const itemToDate = item.ToDate ? moment(item.ToDate).format('YYYY-MM-DD') : null;
+
+      // Check date range overlap
+      const isInDateRange =
+        itemFromDate &&
+        itemToDate &&
+        itemFromDate <= toDateStr &&
+        itemToDate >= fromDateStr;
+
+      // Check department filter
+      const isInDepartment =
+        !departments || departments.length === 0 ||
+        departments.includes(item[filterColumn]);
+
+      return isInDateRange && isInDepartment;
+    });
+
+    console.log(`Filtered requestItems:`, filteredItems);
+
+    return filteredItems.map(item => ({
       building: item.Building,
       fromDate: item.FromDate,
       toDate: item.ToDate,
@@ -603,4 +642,5 @@ export class SharePointService {
       GUID: item.GUID
     }));
   }
+ 
 }

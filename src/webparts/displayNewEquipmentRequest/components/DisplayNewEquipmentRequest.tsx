@@ -10,7 +10,7 @@ import "@pnp/sp/items";
 import styles from "./DisplayNewEquipmentRequest.module.scss";
 import { SharePointService } from "./services/SharePointService";
 import { equipmentRequestValidationSchema } from "./utils/validation";
-import { isFirstNotIncluded } from "./utils/helpers";
+import { isFirstNotIncluded, cleanSiteUrl } from "./utils/helpers";
 import { IDisplayNewEquipmentRequestProps } from "./interfaces/IDisplayNewEquipmentRequest";
 import { IDisplayNewEquipmentRequestState } from "./interfaces/IDisplayNewEquipmentRequest";
 import { BasicInformation } from "./common/BasicInformation";
@@ -530,7 +530,7 @@ export default class DisplayNewEquipmentRequest extends React.Component<
       await SharePointService.updateRequest(id, dataNeedsToBeUpdated);
 
       if (this.state.guid) {
-        await SharePointService.uploadFiles(this.state.guid, formData.files);
+        await SharePointService.uploadFiles(this.state.guid, formData.files, cleanSiteUrl(this.props.siteUrl));
       }
 
       this.setState({

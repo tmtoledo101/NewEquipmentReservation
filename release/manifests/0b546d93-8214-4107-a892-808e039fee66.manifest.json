@@ -34,7 +34,7 @@
     "scriptResources": {
       "new-equiment-reservation-web-part": {
         "type": "path",
-        "path": "new-equiment-reservation-web-part_4a60419bfc3ca46b4ba4.js"
+        "path": "new-equiment-reservation-web-part_dc0968efc31782e3378b.js"
       },
       "@microsoft/sp-loader": {
         "type": "component",
@@ -58,7 +58,7 @@
       },
       "NewEquimentReservationWebPartStrings": {
         "type": "path",
-        "path": "NewEquimentReservationWebPartStrings_en-us_536e65149b0acf4d52c0043073b9fc59.js"
+        "path": "NewEquimentReservationWebPartStrings_en-us_b41dd8b4c7f5f69692bd8f24e2b83745.js"
       },
       "react-dom": {
         "type": "component",

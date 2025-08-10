@@ -10,7 +10,7 @@ export class SharePointService {
      const user = await sp.web.currentUser.get();
     
         const currentUser = {
-          Email: isDevelopmentMode()? user.Title : user.Email,
+          Email: user.Email,
           Title: user.Title
         };
         return currentUser;
@@ -28,28 +28,52 @@ export class SharePointService {
     }));
   }
 
-  public static async getDepartments(email: string) {
-    const departmentData: any[] = await sp.web.lists
+
+public static async getDepartments(email: string) {
+    let allDepartmentData: any[] = [];
+
+    // Fetch all department items without filter, using getPaged
+    let page = await sp.web.lists
       .getByTitle("EquipUsersPerDepartment")
       .items.select(
         "EmployeeName/EMail",
         "Department/Department",
-      ).filter(isDevelopmentMode()? `EmployeeName/Title eq '${email}'` : `EmployeeName/EMail eq '${email}'`)
+      )
       .expand(
         "Department/FieldValuesAsText",
-        isDevelopmentMode()?"EmployeeName/Title":"EmployeeName/EMail",
+        "EmployeeName/EMail",
       )
-      .get();
-  
-    const temp = departmentData.map(item => item.Department.Department);
+      .top(5000)
+      .getPaged();
+
+    // Add first page results
+    allDepartmentData = [...allDepartmentData, ...page.results];
+
+    // Get subsequent pages if they exist
+    while (page.hasNext) {
+      page = await page.getNext();
+      allDepartmentData = [...allDepartmentData, ...page.results];
+    }
+
+    // Now filter in memory by email
+    const filteredDepartmentData = allDepartmentData.filter(item =>
+      item.EmployeeName &&
+      item.EmployeeName.EMail &&
+      item.EmployeeName.EMail.toLowerCase() === email.toLowerCase()
+    );
+
+    const temp = filteredDepartmentData.map(item => item.Department.Department);
     return temp.map((item, index) => ({
       id: index,
       value: item,
     }));
   }
 
-  public static async getEquipmentsOwner(department: string) {
-    const equipmentList: any[] = await sp.web.lists
+public static async getEquipmentsOwner(department: string) {
+    let allEquipmentList: any[] = [];
+
+    // Fetch all equipment owner items without filter, using getPaged
+    let page = await sp.web.lists
       .getByTitle("EquipmentOwner")
       .items.select(
         "Department/Department",
@@ -58,11 +82,29 @@ export class SharePointService {
       .expand(
         "EquipmentOwner/EMail",
         "Department/FieldValuesAsText"
-      ).filter(`Department/Department eq '${department}'`)
-      .get();
+      )
+      .top(5000)
+      .getPaged();
+
+    // Add first page results
+    allEquipmentList = [...allEquipmentList, ...page.results];
+
+    // Get subsequent pages if they exist
+    while (page.hasNext) {
+      page = await page.getNext();
+      allEquipmentList = [...allEquipmentList, ...page.results];
+    }
+
+    // Now filter in memory by department
+    const filteredEquipmentList = allEquipmentList.filter(item =>
+      item.Department &&
+      item.Department.Department === department &&
+      item.EquipmentOwner &&
+      item.EquipmentOwner.EMail
+    );
 
     const equipmentOwnerList = {};
-    equipmentList.forEach(item => {
+    filteredEquipmentList.forEach(item => {
       equipmentOwnerList[item.EquipmentOwner.EMail] = item.EquipmentOwner.EMail;
     });
     return Object.keys(equipmentOwnerList);
@@ -132,14 +174,17 @@ export class SharePointService {
     };
   }
 
-  public static async updateEquipmentReturnStatus(
+ public static async updateEquipmentReturnStatus(
     currentAssetList: string[],
     building: string,
     borrowedFrom: string,
     releasedDate: string,
     timeslot: string
   ) {
-    const equipmentData: any[] = await sp.web.lists
+    let allEquipmentData: any[] = [];
+
+    // Fetch all equipment items without filter, using getPaged
+    let page = await sp.web.lists
       .getByTitle("NewEquipment")
       .items.select(
         "Building",
@@ -150,12 +195,32 @@ export class SharePointService {
         "BlockedDateAM",
         "BlockedDatePM",
         "BlockedDateWholeDay"
-      ).expand("BorrowedFrom/FieldValuesAsText")
-      .filter(`Building eq '${building}' and BorrowedFrom/Department eq '${borrowedFrom}'`)
-      .get();
+      )
+      .expand("BorrowedFrom/FieldValuesAsText")
+      .top(5000)
+      .getPaged();
+
+    // Add first page results
+    allEquipmentData = [...allEquipmentData, ...page.results];
+
+    // Get subsequent pages if they exist
+    while (page.hasNext) {
+      page = await page.getNext();
+      allEquipmentData = [...allEquipmentData, ...page.results];
+    }
+
+    // Now filter in memory by building and borrowedFrom
+    const equipmentData = allEquipmentData.filter(item =>
+      item.Building === building &&
+      item.BorrowedFrom &&
+      item.BorrowedFrom.Department === borrowedFrom
+    );
 
     const key = `BlockedDate${timeslot}`;
     const filterEquipment = equipmentData.filter(item => currentAssetList.indexOf(item.AssetNumber) > -1);
+    if (filterEquipment.length === 0) {
+      return;
+    }
     const blockedDates = JSON.parse(filterEquipment[0][key]) || [];
     const blockedDatesFilter = blockedDates.filter(item => item !== releasedDate);
 
@@ -173,9 +238,11 @@ export class SharePointService {
     await sp.web.lists.getByTitle('NewEquipmentRequestList').items.getById(id).update(data);
   }
 
-  public static async uploadFiles(guid: string, files: File[]) {
+  public static async uploadFiles(guid: string, files: File[], siteUrl : string) {
     const docLibrary = "NewEquipmentRequestDocs";
-    const f = configService.isDevUser() ? "/sites/ResourceReservationDev" :"/sites/ResourceReservation" + "/" + docLibrary +"/" + guid;
+    //const f = configService.isDevUser() ? "/sites/ResourceReservationDev" :"/sites/ResourceReservation" + "/" + docLibrary +"/" + guid;
+    const f = siteUrl  + "/" + docLibrary +"/" + guid;
+  
     //await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.getByName(guid).delete();
     await sp.web.lists.getByTitle(docLibrary).rootFolder.folders.add(guid);
 

@@ -31,7 +31,7 @@ export const equipmentReservationSchema = yup.object().shape({
   }),
   releaseRemarks: yup.string().when('status', {
     is: 'For Return',
-    then: yup.string().required('Release Remarks is Required'),
+    then: yup.string(),
     otherwise: yup.string()
   }),
   // Return fields
@@ -47,7 +47,7 @@ export const equipmentReservationSchema = yup.object().shape({
   }),
   returnRemarks: yup.string().when('status', {
     is: 'Completed',
-    then: yup.string().required('Return Remarks is Required'),
+    then: yup.string(),
     otherwise: yup.string()
   })
 });
