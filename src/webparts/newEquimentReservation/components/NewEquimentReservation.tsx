@@ -309,7 +309,6 @@ export default class NewEquimentReservation extends React.Component<INewEquiment
       toDate,
       timeslot
     );
-    console.log('equipment',equipment);
     if (availableEquipment.length === 0) {
       this.setState({
         equipmentError: `This equipment is not available as ${equipment.length} out of ${equipment.length} in inventory is in use on the date and time selected.`

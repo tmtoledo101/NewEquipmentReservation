@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { EquipmentDialog } from './EquipmentDialog';
 import { IDropdownItem, IEquipmentData, IEquipmentItem, handleEquipmentSelection, getAvailableEquipment } from '../utils/helpers';
+import { SharePointService } from '../services/SharePointService';
 
 interface IEquipmentDialogFormProps {
   open: boolean;
@@ -31,7 +32,7 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
   setAssetList,
   setNotification
 }) => {
-  const handleSave = (formikInstance: any) => {
+  const handleSave = async (formikInstance: any) => {
     if (!formikInstance) return;
     
     console.log("[SAVE] Received formik instance:", formikInstance.values);
@@ -65,6 +66,8 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
 
     // Update equipment data
     const updatedEquipmentData = [...equipmentData];
+    const isNewRecord = formikInstance.values.currentRecord === -1;
+    
     if (formikInstance.values.currentRecord > -1) {
       updatedEquipmentData[formikInstance.values.currentRecord] = newData;
     } else {
@@ -72,6 +75,31 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
     }
 
     console.log("[SAVE] Updated equipment data:", updatedEquipmentData);
+    
+    // Update blocked dates for new equipment only
+    if (isNewRecord) {
+      try {
+        console.log("[SAVE] Updating blocked dates for new equipment");
+        await SharePointService.updateEquipmentBlockedDates(
+          assetNumber,
+          formikInstance.values.building,
+          formikInstance.values.borrowedFrom,
+          formikInstance.values.fromDate,
+          formikInstance.values.toDate,
+          formikInstance.values.time
+        );
+        console.log("[SAVE] Successfully updated blocked dates");
+      } catch (error) {
+        console.error("[SAVE] Error updating blocked dates:", error);
+        setNotification({
+          show: true,
+          message: "Equipment saved but failed to update blocked dates. Please try again.",
+          severity: "error"
+        });
+        return;
+      }
+    }
+    
     setEquipmentData(updatedEquipmentData);
     onClose();
     
@@ -84,8 +112,36 @@ export const EquipmentDialogForm: React.FC<IEquipmentDialogFormProps> = ({
     }
   };
 
-  const handleDelete = (formikInstance: any) => {
+  const handleDelete = async (formikInstance: any) => {
     if (!formikInstance) return;
+    
+    const recordIndex = formikInstance.values.currentRecord;
+    if (recordIndex < 0 || recordIndex >= equipmentData.length) return;
+    
+    const equipmentToDelete = equipmentData[recordIndex];
+    
+    // Clear blocked dates for the equipment being deleted
+    try {
+      console.log("[DELETE] Clearing blocked dates for equipment:", equipmentToDelete);
+      
+      await SharePointService.removeEquipmentBlockedDates(
+        equipmentToDelete.assetNumber,
+        formikInstance.values.building,
+        formikInstance.values.borrowedFrom,
+        formikInstance.values.fromDate,
+        formikInstance.values.toDate,
+        formikInstance.values.time
+      );
+      
+      console.log("[DELETE] Successfully cleared blocked dates");
+    } catch (error) {
+      console.error("[DELETE] Error clearing blocked dates:", error);
+      setNotification({
+        show: true,
+        message: "Equipment deleted but failed to clear blocked dates. Please check manually.",
+        severity: "error"
+      });
+    }
     
     const updatedEquipmentData = equipmentData.filter(
       (_, index) => index !== formikInstance.values.currentRecord

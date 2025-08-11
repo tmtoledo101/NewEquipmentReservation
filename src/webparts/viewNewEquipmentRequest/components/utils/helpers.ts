@@ -40,6 +40,17 @@ export interface IEquipmentItem {
   blockedDateWholeDay: string | null;
 }
 
+const safeParseBlockedDates = (value: any): string[] => {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.warn('Error parsing blocked dates:', error);
+    return [];
+  }
+};
+
 export const getAvailableEquipment = (
   equipment: IEquipmentItem[],
   fromDate: Date,
@@ -55,24 +66,29 @@ export const getAvailableEquipment = (
     for (let date = startDate; date.isSameOrBefore(endDate); date.add(1, 'days')) {
       const currentDate = date.format('YYYY/MM/DD');
       
-      // Modified checks to use traditional null checks
-      if (timeslot === 'AM' && item.blockedDateAM && item.blockedDateAM.includes(currentDate)) {
+      // Parse blocked dates as JSON arrays
+      const blockedDateAM = safeParseBlockedDates(item.blockedDateAM);
+      const blockedDatePM = safeParseBlockedDates(item.blockedDatePM);
+      const blockedDateWholeDay = safeParseBlockedDates(item.blockedDateWholeDay);
+      
+      // Check availability based on timeslot
+      if (timeslot === 'AM' && blockedDateAM.includes(currentDate)) {
         isAvailable = false;
         break;
       }
-      if (timeslot === 'PM' && item.blockedDatePM && item.blockedDatePM.includes(currentDate)) {
+      if (timeslot === 'PM' && blockedDatePM.includes(currentDate)) {
         isAvailable = false;
         break;
       }
-      if (timeslot === 'Whole Day' && 
-         ((item.blockedDateWholeDay && item.blockedDateWholeDay.includes(currentDate)) || 
-          (item.blockedDateAM && item.blockedDateAM.includes(currentDate)) || 
-          (item.blockedDatePM && item.blockedDatePM.includes(currentDate)))) {
+      if (timeslot === 'WholeDay' && 
+         (blockedDateWholeDay.includes(currentDate) || 
+          blockedDateAM.includes(currentDate) || 
+          blockedDatePM.includes(currentDate))) {
         isAvailable = false;
         break;
       }
       if ((timeslot === 'AM' || timeslot === 'PM') && 
-          item.blockedDateWholeDay && item.blockedDateWholeDay.includes(currentDate)) {
+          blockedDateWholeDay.includes(currentDate)) {
         isAvailable = false;
         break;
       }

@@ -642,5 +642,229 @@ public static async updateEquipmentReturnStatus(
       GUID: item.GUID
     }));
   }
+
+  /**
+   * Updates blocked dates for equipment when new equipment is added
+   * @param assetNumbers Array of asset numbers to update
+   * @param building Building name
+   * @param borrowedFrom Department name
+   * @param fromDate Start date of reservation
+   * @param toDate End date of reservation
+   * @param timeslot Time slot (AM, PM, or WholeDay)
+   */
+  public static async updateEquipmentBlockedDates(
+    assetNumbers: string[],
+    building: string,
+    borrowedFrom: string,
+    fromDate: Date,
+    toDate: Date,
+    timeslot: string
+  ): Promise<void> {
+    try {
+      // Generate date range
+      const dateRange = this.generateDateRange(fromDate, toDate);
+      
+      // Determine which blocked date field to update
+      let blockedDateField: string;
+      if (timeslot === 'AM') {
+        blockedDateField = 'BlockedDateAM';
+      } else if (timeslot === 'PM') {
+        blockedDateField = 'BlockedDatePM';
+      } else if (timeslot === 'WholeDay') {
+        blockedDateField = 'BlockedDateWholeDay';
+      } else {
+        throw new Error(`Invalid timeslot: ${timeslot}`);
+      }
+
+      // Get all equipment items that match the criteria
+      let allEquipmentData: any[] = [];
+
+      // Fetch all equipment items without filter
+      let page = await sp.web.lists
+        .getByTitle("NewEquipment")
+        .items.select(
+          "Building",
+          "BorrowedFrom/Department",
+          "AssetNumber",
+          "ID",
+          "BlockedDateAM",
+          "BlockedDatePM",
+          "BlockedDateWholeDay"
+        )
+        .expand("BorrowedFrom/FieldValuesAsText")
+        .top(100)
+        .getPaged();
+
+      // Add first page results
+      allEquipmentData = [...allEquipmentData, ...page.results];
+
+      // Get subsequent pages if they exist
+      while (page.hasNext) {
+        page = await page.getNext();
+        allEquipmentData = [...allEquipmentData, ...page.results];
+      }
+
+      // Filter in memory by building, borrowedFrom, and asset numbers
+      const equipmentToUpdate = allEquipmentData.filter(item =>
+        item.Building === building &&
+        item.BorrowedFrom &&
+        item.BorrowedFrom.Department === borrowedFrom &&
+        assetNumbers.includes(item.AssetNumber)
+      );
+
+      if (equipmentToUpdate.length === 0) {
+        console.warn('No equipment found matching the criteria for blocked date update');
+        return;
+      }
+
+      // Update each equipment item
+      const updatePromises = equipmentToUpdate.map(async (item) => {
+        // Get existing blocked dates
+        const existingBlockedDates = this.safeParseBlockedDates(item[blockedDateField]);
+        
+        // Merge with new dates (avoid duplicates)
+        const updatedBlockedDates = [...new Set([...existingBlockedDates, ...dateRange])];
+        
+        // Update the equipment item
+        const updateData = {
+          [blockedDateField]: JSON.stringify(updatedBlockedDates)
+        };
+
+        return sp.web.lists
+          .getByTitle('NewEquipment')
+          .items.getById(item.ID)
+          .update(updateData);
+      });
+
+      await Promise.all(updatePromises);
+      
+      console.log(`Successfully updated blocked dates for ${equipmentToUpdate.length} equipment items`);
+    } catch (error) {
+      console.error('Error in updateEquipmentBlockedDates:', error);
+      throw new Error(`Failed to update equipment blocked dates: ${error.message}`);
+    }
+  }
+
+  /**
+   * Removes blocked dates for equipment when equipment is deleted from a reservation
+   * @param assetNumbers Array of asset numbers to update
+   * @param building Building name
+   * @param borrowedFrom Department name
+   * @param fromDate Start date of reservation
+   * @param toDate End date of reservation
+   * @param timeslot Time slot (AM, PM, or WholeDay)
+   */
+  public static async removeEquipmentBlockedDates(
+    assetNumbers: string[],
+    building: string,
+    borrowedFrom: string,
+    fromDate: Date,
+    toDate: Date,
+    timeslot: string
+  ): Promise<void> {
+    try {
+      // Generate date range to remove
+      const dateRangeToRemove = this.generateDateRange(fromDate, toDate);
+      
+      // Determine which blocked date field to update
+      let blockedDateField: string;
+      if (timeslot === 'AM') {
+        blockedDateField = 'BlockedDateAM';
+      } else if (timeslot === 'PM') {
+        blockedDateField = 'BlockedDatePM';
+      } else if (timeslot === 'WholeDay') {
+        blockedDateField = 'BlockedDateWholeDay';
+      } else {
+        throw new Error(`Invalid timeslot: ${timeslot}`);
+      }
+
+      // Get all equipment items that match the criteria
+      let allEquipmentData: any[] = [];
+
+      // Fetch all equipment items without filter
+      let page = await sp.web.lists
+        .getByTitle("NewEquipment")
+        .items.select(
+          "Building",
+          "BorrowedFrom/Department",
+          "AssetNumber",
+          "ID",
+          "BlockedDateAM",
+          "BlockedDatePM",
+          "BlockedDateWholeDay"
+        )
+        .expand("BorrowedFrom/FieldValuesAsText")
+        .top(100)
+        .getPaged();
+
+      // Add first page results
+      allEquipmentData = [...allEquipmentData, ...page.results];
+
+      // Get subsequent pages if they exist
+      while (page.hasNext) {
+        page = await page.getNext();
+        allEquipmentData = [...allEquipmentData, ...page.results];
+      }
+
+      // Filter in memory by building, borrowedFrom, and asset numbers
+      const equipmentToUpdate = allEquipmentData.filter(item =>
+        item.Building === building &&
+        item.BorrowedFrom &&
+        item.BorrowedFrom.Department === borrowedFrom &&
+        assetNumbers.includes(item.AssetNumber)
+      );
+
+      if (equipmentToUpdate.length === 0) {
+        console.warn('No equipment found matching the criteria for blocked date removal');
+        return;
+      }
+
+      // Update each equipment item
+      const updatePromises = equipmentToUpdate.map(async (item) => {
+        // Get existing blocked dates
+        const existingBlockedDates = this.safeParseBlockedDates(item[blockedDateField]);
+        
+        // Remove the dates from the existing blocked dates
+        const updatedBlockedDates = existingBlockedDates.filter(date => 
+          !dateRangeToRemove.includes(date)
+        );
+        
+        // Update the equipment item
+        const updateData = {
+          [blockedDateField]: JSON.stringify(updatedBlockedDates)
+        };
+
+        return sp.web.lists
+          .getByTitle('NewEquipment')
+          .items.getById(item.ID)
+          .update(updateData);
+      });
+
+      await Promise.all(updatePromises);
+      
+      console.log(`Successfully removed blocked dates for ${equipmentToUpdate.length} equipment items`);
+    } catch (error) {
+      console.error('Error in removeEquipmentBlockedDates:', error);
+      throw new Error(`Failed to remove equipment blocked dates: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generates an array of date strings in YYYY/MM/DD format for the given date range
+   * @param fromDate Start date
+   * @param toDate End date
+   * @returns Array of date strings
+   */
+  private static generateDateRange(fromDate: Date, toDate: Date): string[] {
+    const from = moment(fromDate);
+    const to = moment(toDate);
+    const dateRange: string[] = [];
+    
+    for (let date = from.clone(); date.isSameOrBefore(to); date.add(1, 'day')) {
+      dateRange.push(date.format('YYYY/MM/DD'));
+    }
+    
+    return dateRange;
+  }
  
 }

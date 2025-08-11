@@ -150,6 +150,7 @@ public static async getEquipments() {
   }
 
   public static async updateEquipmentItem(id: number, data: any) {
+    console.log("Updating equipment item with ID:", id, "Data:", data);
     return await sp.web.lists
       .getByTitle('NewEquipment')
       .items.getById(id)
@@ -169,9 +170,9 @@ public static async getEquipments() {
     const referenceNumber = `OPRS-${moment().year()}${getCount(moment().month())}-${getCount(count, 4)}`;
     const from = moment(formatDate(formData.fromDate));
     const days = moment(formatDate(formData.toDate)).diff(from, 'days', true);
-
+    console.log("Create request");
     await this.updateEquipmentStatus(equipmentData, days, from, formData.time);
-
+      console.log("Create request2");
     for (let i = 0; i <= days; i++) {
       const requestDate = moment(from).add(i, 'days').format('YYYY/MM/DD');
       
@@ -291,13 +292,14 @@ public static async getEquipments() {
 
     const updatePromises = currentAssetList.map(async (assetNumber) => {
       let allEquipment: any[] = [];
-      
+      console.log("assetNumber:", assetNumber);
+      console.log("Current Asset List:", currentAssetList);
       // Initial page request
       let page = await sp.web.lists
         .getByTitle('NewEquipment')
         .items
         .filter(`AssetNumber eq '${assetNumber}'`)
-        .top(1000)  // Process 100 items at a time
+        .top(5000)  // Process 100 items at a time
         .getPaged();
 
       // Add first page results
@@ -309,13 +311,16 @@ public static async getEquipments() {
         allEquipment = [...allEquipment, ...page.results];
       }
 
+      console.log('allEquipment:', allEquipment, 'allEquipment.length > 0:', allEquipment.length > 0);
       if (allEquipment.length > 0) {
         const item = allEquipment[0];
+        console.log('item:', item, 'allEquipment:', allEquipment);
         const existingDates = item[key] ? JSON.parse(item[key]) : [];
         const newDates = blockedDates.filter(date => !existingDates.includes(date));
-
+        console.log("id:", item.ID, "existingDates:", existingDates, "newDates:", newDates);
         return this.updateEquipmentItem(item.ID, {
           [key]: JSON.stringify([...existingDates, ...newDates])
+          //[key]: [...existingDates, ...newDates].join(",")
         });
       }
     });
